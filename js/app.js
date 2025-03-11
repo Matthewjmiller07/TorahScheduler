@@ -565,7 +565,7 @@ function generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, 
             totalDays: totalDays,
             chaptersPerDay: unitsPerDay,
             estimatedEndDate: estimatedEndDate,
-            studyUnitType: studyUnitType
+            studyUnitType: typeof studyUnitType === 'string' ? studyUnitType : 'chapters'
         };
         console.log('Generated chaptersInfo:', chaptersInfo);
     } 
@@ -578,8 +578,42 @@ function generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, 
             totalChapters: units.length,
             totalDays: totalStudyDays,
             chaptersPerDay: avgUnitsPerDay,
-            studyUnitType: studyUnitType
+            studyUnitType: typeof studyUnitType === 'string' ? studyUnitType : 'chapters'
         };
+    }
+    
+    // If no end date is provided, we'll just create a full schedule for all units
+    if (!endDate) {
+        // Calculate how many days we need based on units per day
+        const totalDays = Math.ceil(units.length / (unitsPerDay || 1));
+        console.log(`No end date provided. Calculated ${totalDays} total days needed for ${units.length} units`);
+        
+        let estimatedEndDate = new Date(startDate);
+        let studyDaysFound = 0;
+        
+        // Find the date when we'll have enough study days
+        while (studyDaysFound < totalDays) {
+            if (selectedDays.includes(estimatedEndDate.getDay())) {
+                studyDaysFound++;
+            }
+            if (studyDaysFound < totalDays) {
+                estimatedEndDate.setDate(estimatedEndDate.getDate() + 1);
+            }
+        }
+        
+        // Use the estimated end date
+        endDate = new Date(estimatedEndDate);
+        
+        // Update chaptersInfo
+        if (!chaptersInfo) {
+            chaptersInfo = {
+                totalChapters: units.length,
+                totalDays: totalDays,
+                chaptersPerDay: unitsPerDay || Math.ceil(units.length / totalDays),
+                estimatedEndDate: estimatedEndDate,
+                studyUnitType: typeof studyUnitType === 'string' ? studyUnitType : 'chapters'
+            };
+        }
     }
     
     // Generate schedule entries
@@ -681,13 +715,13 @@ function displaySchedule(schedule, name, chaptersInfo = null) {
         // Different summary based on whether we have an estimated end date or not
         if (chaptersInfo.estimatedEndDate) {
             // For units per day mode
-            const unitType = chaptersInfo.studyUnitType || 'chapters';
+            const unitType = String(chaptersInfo.studyUnitType || 'chapters');
             summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${chaptersInfo.totalChapters} ${unitType} over ${chaptersInfo.totalDays} study days.<br>
                                    <strong>${unitType.charAt(0).toUpperCase() + unitType.slice(1)} per day:</strong> ${chaptersInfo.chaptersPerDay}.<br>
                                    <strong>Estimated completion date:</strong> ${formatDateForDisplay(chaptersInfo.estimatedEndDate)}.`;
         } else {
             // For timeframe mode
-            const unitType = chaptersInfo.studyUnitType || 'chapters';
+            const unitType = String(chaptersInfo.studyUnitType || 'chapters');
             summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${chaptersInfo.totalChapters} ${unitType} over ${chaptersInfo.totalDays} study days.<br>
                                    <strong>Average per day:</strong> ${chaptersInfo.chaptersPerDay.toFixed(2)} ${unitType} on each study day.`;
         }

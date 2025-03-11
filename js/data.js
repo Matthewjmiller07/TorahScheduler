@@ -63,7 +63,7 @@ const mishnayotData = {
     zeraim: [
         { name: "Berakhot", hebrewName: "ברכות", chapters: 9 },
         { name: "Peah", hebrewName: "פאה", chapters: 8 },
-        { name: "Demai", hebrewName: "דמאי", chapters: 7 },
+        { name: "Damai", hebrewName: "דמאי", chapters: 7 },
         { name: "Kilayim", hebrewName: "כלאים", chapters: 9 },
         { name: "Sheviit", hebrewName: "שביעית", chapters: 10 },
         { name: "Terumot", hebrewName: "תרומות", chapters: 11 },
@@ -111,7 +111,7 @@ const mishnayotData = {
         { name: "Shevuot", hebrewName: "שבועות", chapters: 8 },
         { name: "Eduyot", hebrewName: "עדויות", chapters: 8 },
         { name: "Avodah Zarah", hebrewName: "עבודה זרה", chapters: 5 },
-        { name: "Avot", hebrewName: "אבות", chapters: 5 },
+        { name: "Avot", hebrewName: "אבות", chapters: 6 },
         { name: "Horayot", hebrewName: "הוריות", chapters: 3 }
     ],
     
@@ -133,10 +133,10 @@ const mishnayotData = {
     // Taharot (Purities) - Ritual purity and impurity
     taharot: [
         { name: "Kelim", hebrewName: "כלים", chapters: 30 },
-        { name: "Ohalot", hebrewName: "אהלות", chapters: 18 },
+        { name: "Oholot", hebrewName: "אהלות", chapters: 18 },
         { name: "Negaim", hebrewName: "נגעים", chapters: 14 },
         { name: "Parah", hebrewName: "פרה", chapters: 12 },
-        { name: "Taharot", hebrewName: "טהרות", chapters: 10 },
+        { name: "Tahorot", hebrewName: "טהרות", chapters: 10 },
         { name: "Mikvaot", hebrewName: "מקוואות", chapters: 10 },
         { name: "Niddah", hebrewName: "נידה", chapters: 10 },
         { name: "Makhshirin", hebrewName: "מכשירין", chapters: 6 },
@@ -345,9 +345,9 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
         // Zeraim
         'Berakhot': [5, 8, 6, 7, 5, 8, 5, 8, 5],
         'Peah': [6, 8, 8, 11, 8, 11, 8, 9],
-        'Demai': [4, 5, 6, 7, 11, 12, 8],
+        'Damai': [4, 5, 6, 7, 11, 12, 8],
         'Kilayim': [9, 11, 7, 9, 8, 9, 8, 6, 10],
-        'Sheviit': [8, 10, 10, 10, 9, 6, 7, 11, 10, 9],
+        'Sheviit': [8, 10, 10, 10, 9, 6, 7, 11, 9, 9],
         'Terumot': [10, 6, 9, 13, 9, 6, 7, 12, 7, 12, 10],
         'Maasrot': [8, 8, 10, 6, 8],
         'Maaser Sheni': [7, 10, 13, 12, 15],
@@ -362,7 +362,7 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
         'Yoma': [8, 7, 11, 6, 7, 8, 5, 9],
         'Sukkah': [11, 9, 15, 10, 8],
         'Beitzah': [10, 10, 8, 7, 7],
-        'Rosh Hashanah': [9, 9, 8, 9],
+        'Rosh Hashanah': [9, 8, 9, 9],
         'Taanit': [7, 10, 9, 8],
         'Megillah': [11, 6, 6, 10],
         'Moed Katan': [10, 5, 9],
@@ -398,12 +398,12 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
         'Tamid': [4, 5, 9, 3, 6, 3, 4],
         'Middot': [9, 6, 8, 7, 4],
         'Kinnim': [4, 5, 6],
-        // Tohorot
+        // Tahorot
         'Kelim': [9, 8, 8, 4, 11, 4, 6, 11, 8, 8, 9, 8, 8, 8, 6, 8, 17, 9, 10, 7, 3, 10, 5, 17, 9, 9, 12, 10, 8, 4],
         'Oholot': [8, 7, 7, 3, 7, 7, 6, 6, 16, 7, 9, 8, 6, 7, 10, 5, 5, 10],
         'Negaim': [6, 5, 8, 11, 5, 8, 5, 10, 3, 10, 12, 7, 12, 13],
         'Parah': [4, 5, 11, 4, 9, 5, 12, 11, 9, 6, 9, 11],
-        'Tohorot': [9, 8, 8, 13, 9, 10, 9, 9, 9, 8],
+        'Tahorot': [9, 8, 8, 13, 9, 10, 9, 9, 9, 8],
         'Mikvaot': [8, 10, 4, 5, 6, 11, 7, 5, 7, 8],
         'Niddah': [7, 7, 7, 7, 9, 14, 5, 4, 11, 8],
         'Makhshirin': [6, 11, 8, 10, 11, 8],
@@ -416,13 +416,16 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
     // Helper function to build individual Mishnah references
     function buildMishnayotReferences(tractate) {
         const mishnayot = [];
+        
         for (let chapter = 1; chapter <= tractate.chapters; chapter++) {
             // If we have detailed mishnah counts, use them, otherwise estimate 8 mishnayot per chapter
             const mishnayotCount = mishnayotCounts[tractate.name] ? mishnayotCounts[tractate.name][chapter-1] : 8;
+            
             for (let mishnah = 1; mishnah <= mishnayotCount; mishnah++) {
                 mishnayot.push(`${tractate.name} ${chapter}:${mishnah}`);
             }
         }
+        
         return mishnayot;
     }
     
@@ -438,8 +441,10 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
         if (studyWholeSeder) {
             // Specific Seder - all tractates
             const tractates = mishnayotData[customSeder] || [];
+            
             tractates.forEach(tractate => {
-                mishnayot = mishnayot.concat(buildMishnayotReferences(tractate));
+                const tractateRefs = buildMishnayotReferences(tractate);
+                mishnayot = mishnayot.concat(tractateRefs);
             });
         } else if (customTractates && customTractates.length > 0) {
             // Specific tractates from the seder
@@ -448,7 +453,8 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
             customTractates.forEach(tractateName => {
                 const tractate = tractates.find(t => t.name === tractateName);
                 if (tractate) {
-                    mishnayot = mishnayot.concat(buildMishnayotReferences(tractate));
+                    const tractateRefs = buildMishnayotReferences(tractate);
+                    mishnayot = mishnayot.concat(tractateRefs);
                 }
             });
         }
