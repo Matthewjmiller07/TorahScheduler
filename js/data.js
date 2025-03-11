@@ -3,6 +3,26 @@
  * Contains all the data structures for Tanach books and Mishnah tractates
  */
 
+// Chidon curriculum data
+const chidonData = {
+    // Middle School Division (Grades 6-8)
+    middleSchool: [
+        { name: "Deuteronomy", hebrewName: "דברים", chapters: 34, fullBook: true },
+        { name: "I Samuel", hebrewName: "שמואל א", chapters: 31, fullBook: true },
+        { name: "Ruth", hebrewName: "רות", chapters: 4, fullBook: true },
+        { name: "I Chronicles", hebrewName: "דברי הימים א", chapters: null, customChapters: [13, 14, 15, 16, 17, 21, 22, 28, 29] }
+    ],
+    
+    // High School Division (Grades 9-12)
+    highSchool: [
+        { name: "Deuteronomy", hebrewName: "דברים", chapters: 34, fullBook: true },
+        { name: "I Samuel", hebrewName: "שמואל א", chapters: 31, fullBook: true },
+        { name: "Ruth", hebrewName: "רות", chapters: 4, fullBook: true },
+        { name: "I Chronicles", hebrewName: "דברי הימים א", chapters: null, customChapters: [13, 14, 15, 16, 17, 21, 22, 28, 29] },
+        { name: "Jeremiah", hebrewName: "ירמיה", chapters: null, customChapters: [1, 2].concat([...Array(19).keys()].map(i => i + 18)) } // Chapters 1-2, 18-36
+    ]
+};
+
 // Tanach data organization
 const tanachData = {
     // Torah (Five Books of Moses)
@@ -61,7 +81,7 @@ const tanachData = {
 const mishnayotData = {
     // Zeraim (Seeds) - Agricultural laws
     zeraim: [
-        { name: "Berakhot", hebrewName: "ברכות", chapters: 9 },
+        { name: "Berachot", hebrewName: "ברכות", chapters: 9 },
         { name: "Peah", hebrewName: "פאה", chapters: 8 },
         { name: "Damai", hebrewName: "דמאי", chapters: 7 },
         { name: "Kilayim", hebrewName: "כלאים", chapters: 9 },
@@ -152,6 +172,14 @@ function getAllTanachBooks() {
     return [...tanachData.torah, ...tanachData.neviim, ...tanachData.ketuvim];
 }
 
+// Helper function to get books for Chidon curriculum
+function getChidonBooks(division) {
+    if (!division || !chidonData[division]) {
+        return [];
+    }
+    return chidonData[division];
+}
+
 // Helper function to get all tractates from Mishnah
 function getAllMishnayotTractates() {
     return [
@@ -179,7 +207,7 @@ function buildChapterReferences(book, totalChapters) {
 }
 
 // Helper function to get all chapters for selected books
-function getChaptersForSelection(selection, customBook = null) {
+function getChaptersForSelection(selection, customBook = null, chidonDivision = null) {
     let chapters = [];
     
     if (selection === 'all') {
@@ -209,13 +237,28 @@ function getChaptersForSelection(selection, customBook = null) {
         if (book) {
             chapters = buildChapterReferences(book.name, book.chapters);
         }
+    } else if (selection === 'chidon' && chidonDivision) {
+        // Chidon curriculum
+        const chidonBooks = getChidonBooks(chidonDivision);
+        
+        chidonBooks.forEach(book => {
+            if (book.fullBook && book.chapters) {
+                // Full book with standard chapter count
+                chapters = chapters.concat(buildChapterReferences(book.name, book.chapters));
+            } else if (book.customChapters && book.customChapters.length > 0) {
+                // Book with specific chapters
+                book.customChapters.forEach(chapterNum => {
+                    chapters.push(`${book.name} ${chapterNum}`);
+                });
+            }
+        });
     }
     
     return chapters;
 }
 
 // Helper function to get all verses for selected books
-function getTanachVersesForSelection(selection, customBook = null) {
+function getTanachVersesForSelection(selection, customBook = null, chidonDivision = null) {
     console.log('getTanachVersesForSelection called with:', { selection, customBook });
     let verses = [];
     
@@ -284,6 +327,31 @@ function getTanachVersesForSelection(selection, customBook = null) {
         } else {
             console.error('Custom book not found:', customBook);
         }
+    } else if (selection === 'chidon' && chidonDivision) {
+        // Chidon curriculum
+        console.log('Getting Chidon books for division:', chidonDivision);
+        const chidonBooks = getChidonBooks(chidonDivision);
+        
+        chidonBooks.forEach(book => {
+            if (book.fullBook && book.chapters) {
+                // Full book with standard chapter count
+                verses = verses.concat(buildVerseReferences(book, verseData[book.name]));
+            } else if (book.customChapters && book.customChapters.length > 0) {
+                // Book with specific chapters
+                const allBooks = getAllTanachBooks();
+                const fullBook = allBooks.find(b => b.name === book.name);
+                
+                if (fullBook) {
+                    book.customChapters.forEach(chapterNum => {
+                        // For each chapter, add all verses
+                        const verseCount = verseData[book.name] ? verseData[book.name][chapterNum-1] : 25;
+                        for (let verse = 1; verse <= verseCount; verse++) {
+                            verses.push(`${book.name} ${chapterNum}:${verse}`);
+                        }
+                    });
+                }
+            }
+        });
     } else {
         console.error('Unknown selection type:', selection);
     }
@@ -343,7 +411,7 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
     // These counts are based on the actual data from the CSV file
     const mishnayotCounts = {
         // Zeraim
-        'Berakhot': [5, 8, 6, 7, 5, 8, 5, 8, 5],
+        'Berachot': [5, 8, 6, 7, 5, 8, 5, 8, 5],
         'Peah': [6, 8, 8, 11, 8, 11, 8, 9],
         'Damai': [4, 5, 6, 7, 11, 12, 8],
         'Kilayim': [9, 11, 7, 9, 8, 9, 8, 6, 10],

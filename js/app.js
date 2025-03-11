@@ -81,6 +81,7 @@ function parseDate(dateStr) {
 function initializeFormListeners() {
     // Tanach form listeners
     document.getElementById('tanachSelection').addEventListener('change', handleTanachSelectionChange);
+    document.getElementById('chidonDivision').addEventListener('change', updateChidonBooksInfo);
     
     const scheduleTypeRadios = document.querySelectorAll('input[name="scheduleType"]');
     scheduleTypeRadios.forEach(radio => {
@@ -208,12 +209,40 @@ function populateTractateOptions(showAll = false) {
 function handleTanachSelectionChange() {
     const selection = document.getElementById('tanachSelection').value;
     const bookSelectionGroup = document.getElementById('bookSelectionGroup');
+    const chidonDivisionGroup = document.getElementById('chidonDivisionGroup');
     
     if (selection === 'custom') {
         bookSelectionGroup.style.display = 'block';
+        chidonDivisionGroup.style.display = 'none';
+    } else if (selection === 'chidon') {
+        bookSelectionGroup.style.display = 'none';
+        chidonDivisionGroup.style.display = 'block';
+        updateChidonBooksInfo();
     } else {
         bookSelectionGroup.style.display = 'none';
+        chidonDivisionGroup.style.display = 'none';
     }
+}
+
+/**
+ * Update the Chidon books information display
+ */
+function updateChidonBooksInfo() {
+    const division = document.getElementById('chidonDivision').value;
+    const chidonBooksInfo = document.getElementById('chidonBooksInfo');
+    const chidonBooks = getChidonBooks(division);
+    
+    let html = '<ul class="mb-0">';
+    chidonBooks.forEach(book => {
+        if (book.fullBook) {
+            html += `<li>${book.name} (${book.hebrewName}): Complete book</li>`;
+        } else if (book.customChapters && book.customChapters.length > 0) {
+            html += `<li>${book.name} (${book.hebrewName}): Chapters ${book.customChapters.join(', ')}</li>`;
+        }
+    });
+    html += '</ul>';
+    
+    chidonBooksInfo.innerHTML = html;
 }
 
 /**
@@ -311,6 +340,7 @@ function generateTanachSchedule() {
     
     const tanachSelection = document.getElementById('tanachSelection').value;
     const customBook = tanachSelection === 'custom' ? document.getElementById('bookSelection').value : null;
+    const chidonDivision = tanachSelection === 'chidon' ? document.getElementById('chidonDivision').value : null;
     
     // Get selected weekdays
     const selectedDays = [];
@@ -369,11 +399,11 @@ function generateTanachSchedule() {
     console.log('Tanach study unit type selected:', tanachStudyUnitType);
     
     if (tanachStudyUnitType === 'chapters') {
-        units = getChaptersForSelection(tanachSelection, customBook);
+        units = getChaptersForSelection(tanachSelection, customBook, chidonDivision);
         console.log('Chapters retrieved:', units.length);
     } else if (tanachStudyUnitType === 'verses') {
-        console.log('Retrieving verses for selection:', tanachSelection, 'custom book:', customBook);
-        units = getTanachVersesForSelection(tanachSelection, customBook);
+        console.log('Retrieving verses for selection:', tanachSelection, 'custom book:', customBook, 'chidon division:', chidonDivision);
+        units = getTanachVersesForSelection(tanachSelection, customBook, chidonDivision);
         console.log('Verses retrieved:', units.length, 'First few verses:', units.slice(0, 5));
     } else {
         console.error('Unknown study unit type:', tanachStudyUnitType);
