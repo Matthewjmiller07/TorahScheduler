@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torah Schedule Creator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        h1 {
+            color: #3f51b5;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background-color: #3f51b5;
+            border-color: #3f51b5;
+        }
+        .btn-primary:hover {
+            background-color: #303f9f;
+            border-color: #303f9f;
+        }
+        .result-section {
+            margin-top: 30px;
+            display: none;
+        }
+        .weekday-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .weekday-selector label {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+        }
+        .weekday-selector input {
+            margin-right: 5px;
+        }
+        #schedulePreview {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .nav-tabs {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Torah Schedule Creator</h1>
+        
+        <ul class="nav nav-tabs" id="scheduleTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tanach-tab" data-bs-toggle="tab" data-bs-target="#tanach" type="button" role="tab" aria-controls="tanach" aria-selected="true">Tanach</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="mishnah-tab" data-bs-toggle="tab" data-bs-target="#mishnah" type="button" role="tab" aria-controls="mishnah" aria-selected="false">Mishnah</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="scheduleTabsContent">
+            <div class="tab-pane fade show active" id="tanach" role="tabpanel" aria-labelledby="tanach-tab">
+                <form id="scheduleForm">
+                    <div class="form-group">
+                        <label for="name">Name (for the schedule):</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Select what to study:</label>
+                        <select class="form-select" id="tanachSelection">
+                            <option value="all">Complete Tanach</option>
+                            <option value="torah">Torah (Five Books of Moses)</option>
+                            <option value="neviim">Nevi'im (Prophets)</option>
+                            <option value="ketuvim">Ketuvim (Writings)</option>
+                            <option value="custom">Individual Book</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="bookSelectionGroup" style="display: none;">
+                        <label for="bookSelection">Select Book:</label>
+                        <select class="form-select" id="bookSelection"></select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Schedule Type:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="scheduleType" id="chaptersPerDay" value="chaptersPerDay" checked>
+                            <label class="form-check-label" for="chaptersPerDay">
+                                Chapters per day
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="scheduleType" id="timeframe" value="timeframe">
+                            <label class="form-check-label" for="timeframe">
+                                Set timeframe
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="chaptersPerDayGroup">
+                        <label for="chaptersPerDay">Chapters per day:</label>
+                        <input type="number" class="form-control" id="chaptersPerDayInput" min="1" value="1">
+                    </div>
+                    
+                    <div class="form-group" id="timeframeGroup" style="display: none;">
+                        <label for="startDate">Start Date:</label>
+                        <input type="text" class="form-control" id="startDate">
+                        
+                        <div class="mt-2">
+                            <label for="endDate">End Date (optional):</label>
+                            <input type="text" class="form-control" id="endDate" placeholder="Leave empty to complete all on start date">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Study Days:</label>
+                        <div class="weekday-selector">
+                            <label><input type="checkbox" value="0" class="weekday" checked> Sunday</label>
+                            <label><input type="checkbox" value="1" class="weekday" checked> Monday</label>
+                            <label><input type="checkbox" value="2" class="weekday" checked> Tuesday</label>
+                            <label><input type="checkbox" value="3" class="weekday" checked> Wednesday</label>
+                            <label><input type="checkbox" value="4" class="weekday" checked> Thursday</label>
+                            <label><input type="checkbox" value="5" class="weekday" checked> Friday</label>
+                            <label><input type="checkbox" value="6" class="weekday" checked> Saturday</label>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="generateScheduleBtn">Generate Schedule</button>
+                </form>
+            </div>
+            
+            <div class="tab-pane fade" id="mishnah" role="tabpanel" aria-labelledby="mishnah-tab">
+                <form id="mishnayotForm">
+                    <div class="form-group">
+                        <label for="mishnayotName">Name (for the schedule):</label>
+                        <input type="text" class="form-control" id="mishnayotName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Select what to study:</label>
+                        <select class="form-select" id="mishnayotSelection">
+                            <option value="all">Complete Mishnayot</option>
+                            <option value="seder">Select Seder</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="sederSelectionGroup" style="display: none;">
+                        <label for="sederSelection">Select Seder:</label>
+                        <select class="form-select" id="sederSelection"></select>
+                        
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="studyWholeSeder" checked>
+                            <label class="form-check-label" for="studyWholeSeder">
+                                Study the entire Seder
+                            </label>
+                        </div>
+                        
+                        <div id="tractateSelectionContainer" style="display: none;" class="mt-2">
+                            <label for="tractateSelection">Select Tractate(s):</label>
+                            <select class="form-select" id="tractateSelection" multiple size="5"></select>
+                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple tractates</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Schedule Type:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mishnayotScheduleType" id="mishnayotChaptersPerDay" value="chaptersPerDay" checked>
+                            <label class="form-check-label" for="mishnayotChaptersPerDay">
+                                Chapters per day
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mishnayotScheduleType" id="mishnayotTimeframe" value="timeframe">
+                            <label class="form-check-label" for="mishnayotTimeframe">
+                                Set timeframe
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="mishnayotChaptersPerDayGroup">
+                        <label for="mishnayotChaptersPerDayInput">Chapters per day:</label>
+                        <input type="number" class="form-control" id="mishnayotChaptersPerDayInput" min="1" value="1">
+                    </div>
+                    
+                    <div class="form-group" id="mishnayotTimeframeGroup" style="display: none;">
+                        <label for="mishnayotStartDate">Start Date:</label>
+                        <input type="text" class="form-control" id="mishnayotStartDate">
+                        
+                        <div class="mt-2">
+                            <label for="mishnayotEndDate">End Date (optional):</label>
+                            <input type="text" class="form-control" id="mishnayotEndDate" placeholder="Leave empty to complete all on start date">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Study Days:</label>
+                        <div class="weekday-selector">
+                            <label><input type="checkbox" value="0" class="mishnayotWeekday" checked> Sunday</label>
+                            <label><input type="checkbox" value="1" class="mishnayotWeekday" checked> Monday</label>
+                            <label><input type="checkbox" value="2" class="mishnayotWeekday" checked> Tuesday</label>
+                            <label><input type="checkbox" value="3" class="mishnayotWeekday" checked> Wednesday</label>
+                            <label><input type="checkbox" value="4" class="mishnayotWeekday" checked> Thursday</label>
+                            <label><input type="checkbox" value="5" class="mishnayotWeekday" checked> Friday</label>
+                            <label><input type="checkbox" value="6" class="mishnayotWeekday" checked> Saturday</label>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="generateMishnayotScheduleBtn">Generate Schedule</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="result-section" id="resultSection">
+            <h3>Your Schedule</h3>
+            <div class="d-flex justify-content-between mb-3">
+                <button class="btn btn-success" id="downloadCsvBtn">Download CSV</button>
+                <button class="btn btn-success" id="downloadIcsBtn">Download ICS (Calendar)</button>
+            </div>
+            
+            <div id="schedulePreview">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Reading</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
