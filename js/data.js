@@ -61,7 +61,7 @@ const tanachData = {
 const mishnayotData = {
     // Zeraim (Seeds) - Agricultural laws
     zeraim: [
-        { name: "Berakhot", hebrewName: "ברכות", chapters: 9 },
+        { name: "Berachot", hebrewName: "ברכות", chapters: 9 },
         { name: "Peah", hebrewName: "פאה", chapters: 8 },
         { name: "Demai", hebrewName: "דמאי", chapters: 7 },
         { name: "Kilayim", hebrewName: "כלאים", chapters: 9 },
@@ -343,7 +343,7 @@ function getMishnayotIndividualForSelection(selection, customSeder = null, custo
     // These counts are based on the actual data from the CSV file
     const mishnayotCounts = {
         // Zeraim
-        'Berakhot': [5, 8, 6, 7, 5, 8, 5, 8, 5],
+        'Berachot': [5, 8, 6, 7, 5, 8, 5, 8, 5],
         'Peah': [6, 8, 8, 11, 8, 11, 8, 9],
         'Demai': [4, 5, 6, 7, 11, 12, 8],
         'Kilayim': [9, 11, 7, 9, 8, 9, 8, 6, 10],
