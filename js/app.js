@@ -325,12 +325,13 @@ function generateTanachSchedule() {
     
     // Get schedule type and related values
     const scheduleType = document.querySelector('input[name="scheduleType"]:checked').value;
-    let startDate, endDate, chaptersPerDay;
+    let startDate, endDate, unitsPerDay;
+    const tanachStudyUnitType = document.getElementById('studyUnitType').value;
     
     if (scheduleType === 'chaptersPerDay') {
-        chaptersPerDay = parseInt(document.getElementById('chaptersPerDayInput').value);
-        if (chaptersPerDay < 1) {
-            alert('Please enter a valid number of chapters per day');
+        unitsPerDay = parseInt(document.getElementById('chaptersPerDayInput').value);
+        if (unitsPerDay < 1) {
+            alert(`Please enter a valid number of ${tanachStudyUnitType} per day`);
             return;
         }
         
@@ -362,16 +363,39 @@ function generateTanachSchedule() {
         }
     }
     
-    // Get chapters for the selected books
-    const chapters = getChaptersForSelection(tanachSelection, customBook);
+    // Get chapters or verses for the selected books
+    let units = [];
+    // Use the already declared tanachStudyUnitType variable
+    console.log('Tanach study unit type selected:', tanachStudyUnitType);
     
-    if (chapters.length === 0) {
-        alert('No chapters found for the selected books');
+    if (tanachStudyUnitType === 'chapters') {
+        units = getChaptersForSelection(tanachSelection, customBook);
+        console.log('Chapters retrieved:', units.length);
+    } else if (tanachStudyUnitType === 'verses') {
+        console.log('Retrieving verses for selection:', tanachSelection, 'custom book:', customBook);
+        units = getTanachVersesForSelection(tanachSelection, customBook);
+        console.log('Verses retrieved:', units.length, 'First few verses:', units.slice(0, 5));
+    } else {
+        console.error('Unknown study unit type:', tanachStudyUnitType);
+    }
+    
+    if (units.length === 0) {
+        console.error('No units found for selection');
+        alert(`No ${tanachStudyUnitType} found for the selected books`);
         return;
     }
     
     // Generate the schedule
-    const { schedule, chaptersInfo } = generateSchedule(chapters, startDate, endDate, chaptersPerDay, selectedDays);
+    console.log('About to generate Mishnayot schedule with:', {
+        unitsCount: units.length,
+        startDate: startDate.toDateString(),
+        endDate: endDate ? endDate.toDateString() : 'none',
+        unitsPerDay,
+        selectedDays,
+        studyUnitType: mishnayotStudyUnitType
+    });
+    const { schedule, chaptersInfo } = generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, mishnayotStudyUnitType);
+    console.log('Mishnayot schedule generated with', schedule.length, 'days');
     
     // Display the schedule
     displaySchedule(schedule, name, chaptersInfo);
@@ -426,12 +450,13 @@ function generateMishnayotSchedule() {
     
     // Get schedule type and related values
     const scheduleType = document.querySelector('input[name="mishnayotScheduleType"]:checked').value;
-    let startDate, endDate, chaptersPerDay;
+    let startDate, endDate, unitsPerDay;
+    const mishnayotStudyUnitType = document.getElementById('mishnayotStudyUnitType').value;
     
     if (scheduleType === 'chaptersPerDay') {
-        chaptersPerDay = parseInt(document.getElementById('mishnayotChaptersPerDayInput').value);
-        if (chaptersPerDay < 1) {
-            alert('Please enter a valid number of chapters per day');
+        unitsPerDay = parseInt(document.getElementById('mishnayotChaptersPerDayInput').value);
+        if (unitsPerDay < 1) {
+            alert(`Please enter a valid number of ${mishnayotStudyUnitType === 'chapters' ? 'chapters' : 'Mishnayot'} per day`);
             return;
         }
         
@@ -463,18 +488,34 @@ function generateMishnayotSchedule() {
         }
     }
     
-    // Get chapters for the selected tractates
-    console.log('Generating schedule with:', { mishnayotSelection, customSeder, customTractates, studyWholeSeder: document.getElementById('studyWholeSeder').checked });
-    const chapters = getMishnayotChaptersForSelection(mishnayotSelection, customSeder, customTractates);
-    console.log('Chapters generated:', chapters.length);
+    // Get chapters or individual mishnayot for the selected tractates
+    console.log('Generating schedule with:', { mishnayotSelection, customSeder, customTractates, studyWholeSeder: document.getElementById('studyWholeSeder').checked, mishnayotStudyUnitType });
     
-    if (chapters.length === 0) {
-        alert('No chapters found for the selected tractates');
+    let units = [];
+    if (mishnayotStudyUnitType === 'chapters') {
+        units = getMishnayotChaptersForSelection(mishnayotSelection, customSeder, customTractates);
+    } else if (mishnayotStudyUnitType === 'mishnayot') {
+        units = getMishnayotIndividualForSelection(mishnayotSelection, customSeder, customTractates);
+    }
+    
+    console.log(`${mishnayotStudyUnitType} generated:`, units.length);
+    
+    if (units.length === 0) {
+        alert(`No ${mishnayotStudyUnitType} found for the selected tractates`);
         return;
     }
     
     // Generate the schedule
-    const { schedule, chaptersInfo } = generateSchedule(chapters, startDate, endDate, chaptersPerDay, selectedDays);
+    console.log('About to generate Mishnayot schedule with:', {
+        unitsCount: units.length,
+        startDate: startDate.toDateString(),
+        endDate: endDate ? endDate.toDateString() : 'none',
+        unitsPerDay,
+        selectedDays,
+        studyUnitType: mishnayotStudyUnitType
+    });
+    const { schedule, chaptersInfo } = generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, mishnayotStudyUnitType);
+    console.log('Mishnayot schedule generated with', schedule.length, 'days');
     
     // Display the schedule
     displaySchedule(schedule, name, chaptersInfo);
@@ -483,15 +524,24 @@ function generateMishnayotSchedule() {
 /**
  * Generate a study schedule based on parameters
  */
-function generateSchedule(chapters, startDate, endDate, chaptersPerDay, selectedDays) {
+function generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, studyUnitType = 'chapters') {
+    console.log('generateSchedule called with:', {
+        unitsLength: units.length,
+        startDate: startDate.toDateString(),
+        endDate: endDate ? endDate.toDateString() : 'none',
+        unitsPerDay,
+        selectedDays: selectedDays.join(',')
+    });
+    
     const schedule = [];
     let currentDate = new Date(startDate);
-    let remainingChapters = [...chapters];
+    let remainingUnits = [...units];
     let chaptersInfo = null;
     
-    // If using chapters per day mode, calculate how many days we need
-    if (chaptersPerDay) {
-        const totalDays = Math.ceil(chapters.length / chaptersPerDay);
+    // If using units per day mode, calculate how many days we need
+    if (unitsPerDay) {
+        const totalDays = Math.ceil(units.length / unitsPerDay);
+        console.log(`Calculated ${totalDays} total days needed for ${units.length} units at ${unitsPerDay} per day`);
         let estimatedEndDate = new Date(startDate);
         let studyDaysFound = 0;
         
@@ -511,51 +561,54 @@ function generateSchedule(chapters, startDate, endDate, chaptersPerDay, selected
         }
         
         chaptersInfo = {
-            totalChapters: chapters.length,
+            totalChapters: units.length,
             totalDays: totalDays,
-            chaptersPerDay: chaptersPerDay,
-            estimatedEndDate: estimatedEndDate
+            chaptersPerDay: unitsPerDay,
+            estimatedEndDate: estimatedEndDate,
+            studyUnitType: studyUnitType
         };
+        console.log('Generated chaptersInfo:', chaptersInfo);
     } 
-    // If using timeframe mode, calculate chapters per day
+    // If using timeframe mode, calculate units per day
     else if (endDate) {
         const totalStudyDays = countStudyDays(startDate, endDate, selectedDays);
-        const avgChaptersPerDay = chapters.length / totalStudyDays;
+        const avgUnitsPerDay = units.length / totalStudyDays;
         
         chaptersInfo = {
-            totalChapters: chapters.length,
+            totalChapters: units.length,
             totalDays: totalStudyDays,
-            chaptersPerDay: avgChaptersPerDay
+            chaptersPerDay: avgUnitsPerDay,
+            studyUnitType: studyUnitType
         };
     }
     
     // Generate schedule entries
-    while (currentDate <= endDate && remainingChapters.length > 0) {
+    while (currentDate <= endDate && remainingUnits.length > 0) {
         const dayOfWeek = currentDate.getDay();
         
         // Check if this is a selected study day
         if (selectedDays.includes(dayOfWeek)) {
-            let dailyChapters;
+            let dailyUnits;
             
-            if (chaptersPerDay) {
-                // Fixed chapters per day mode
-                dailyChapters = remainingChapters.slice(0, chaptersPerDay);
-                remainingChapters = remainingChapters.slice(chaptersPerDay);
+            if (unitsPerDay) {
+                // Fixed units per day mode
+                dailyUnits = remainingUnits.slice(0, unitsPerDay);
+                remainingUnits = remainingUnits.slice(unitsPerDay);
             } else {
-                // Timeframe mode: distribute chapters evenly
+                // Timeframe mode: distribute units evenly
                 const daysLeft = countStudyDays(currentDate, endDate, selectedDays);
                 if (daysLeft <= 0) break;
                 
-                const chaptersPerDayDynamic = Math.ceil(remainingChapters.length / daysLeft);
-                dailyChapters = remainingChapters.slice(0, chaptersPerDayDynamic);
-                remainingChapters = remainingChapters.slice(chaptersPerDayDynamic);
+                const unitsPerDayDynamic = Math.ceil(remainingUnits.length / daysLeft);
+                dailyUnits = remainingUnits.slice(0, unitsPerDayDynamic);
+                remainingUnits = remainingUnits.slice(unitsPerDayDynamic);
             }
             
-            if (dailyChapters.length > 0) {
+            if (dailyUnits.length > 0) {
                 schedule.push({
                     date: new Date(currentDate),
                     dayOfWeek: getDayName(dayOfWeek),
-                    reading: dailyChapters
+                    reading: dailyUnits
                 });
             }
         }
@@ -564,6 +617,7 @@ function generateSchedule(chapters, startDate, endDate, chaptersPerDay, selected
         currentDate.setDate(currentDate.getDate() + 1);
     }
     
+    console.log(`Returning schedule with ${schedule.length} days`);
     return { schedule, chaptersInfo };
 }
 
@@ -626,14 +680,16 @@ function displaySchedule(schedule, name, chaptersInfo = null) {
         
         // Different summary based on whether we have an estimated end date or not
         if (chaptersInfo.estimatedEndDate) {
-            // For chapters per day mode
-            summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${chaptersInfo.totalChapters} chapters over ${chaptersInfo.totalDays} study days.<br>
-                                   <strong>Chapters per day:</strong> ${chaptersInfo.chaptersPerDay}.<br>
+            // For units per day mode
+            const unitType = chaptersInfo.studyUnitType || 'chapters';
+            summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${chaptersInfo.totalChapters} ${unitType} over ${chaptersInfo.totalDays} study days.<br>
+                                   <strong>${unitType.charAt(0).toUpperCase() + unitType.slice(1)} per day:</strong> ${chaptersInfo.chaptersPerDay}.<br>
                                    <strong>Estimated completion date:</strong> ${formatDateForDisplay(chaptersInfo.estimatedEndDate)}.`;
         } else {
             // For timeframe mode
-            summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${chaptersInfo.totalChapters} chapters over ${chaptersInfo.totalDays} study days.<br>
-                                   <strong>Average per day:</strong> ${chaptersInfo.chaptersPerDay.toFixed(2)} chapters on each study day.`;
+            const unitType = chaptersInfo.studyUnitType || 'chapters';
+            summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${chaptersInfo.totalChapters} ${unitType} over ${chaptersInfo.totalDays} study days.<br>
+                                   <strong>Average per day:</strong> ${chaptersInfo.chaptersPerDay.toFixed(2)} ${unitType} on each study day.`;
         }
         
         summaryRow.appendChild(summaryCell);

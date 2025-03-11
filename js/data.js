@@ -214,6 +214,84 @@ function getChaptersForSelection(selection, customBook = null) {
     return chapters;
 }
 
+// Helper function to get all verses for selected books
+function getTanachVersesForSelection(selection, customBook = null) {
+    console.log('getTanachVersesForSelection called with:', { selection, customBook });
+    let verses = [];
+    
+    // Verse counts per chapter for each book (approximate)
+    const verseData = {
+        // Torah books have detailed verse counts per chapter
+        'Genesis': [31, 25, 24, 26, 32, 22, 24, 22, 29, 32, 32, 20, 18, 24, 21, 16, 27, 33, 38, 18, 34, 24, 20, 67, 34, 35, 46, 22, 35, 43, 55, 32, 20, 31, 29, 43, 36, 30, 23, 23, 57, 38, 34, 34, 28, 34, 31, 22, 33, 26],
+        'Exodus': [22, 25, 22, 31, 23, 30, 25, 32, 35, 29, 10, 51, 22, 31, 27, 36, 16, 27, 25, 26, 36, 31, 33, 18, 40, 37, 21, 43, 46, 38, 18, 35, 23, 35, 35, 38, 29, 31, 43, 38],
+        'Leviticus': [17, 16, 17, 35, 19, 30, 38, 36, 24, 20, 47, 8, 59, 56, 33, 34, 16, 30, 37, 27, 24, 33, 44, 23, 55, 46, 34],
+        'Numbers': [54, 34, 51, 49, 31, 27, 89, 26, 23, 36, 35, 16, 33, 45, 41, 50, 13, 32, 22, 29, 35, 41, 30, 25, 18, 65, 23, 31, 40, 16, 54, 42, 56, 29, 34, 13],
+        'Deuteronomy': [46, 37, 29, 49, 33, 25, 26, 20, 29, 22, 32, 32, 18, 29, 23, 22, 20, 22, 21, 20, 23, 30, 25, 22, 19, 19, 26, 68, 29, 20, 30, 52, 29, 12]
+    };
+    console.log('Verse data loaded for books:', Object.keys(verseData));
+    
+    // Helper function to build verse references for a book
+    function buildVerseReferences(book, chapterVerseCounts) {
+        console.log('Building verse references for book:', book.name, 'with', book.chapters, 'chapters');
+        const verses = [];
+        for (let chapter = 1; chapter <= book.chapters; chapter++) {
+            // If we have detailed verse counts, use them, otherwise estimate 25 verses per chapter
+            const verseCount = chapterVerseCounts ? chapterVerseCounts[chapter-1] : 25;
+            console.log(`Chapter ${chapter} has ${verseCount} verses`);
+            for (let verse = 1; verse <= verseCount; verse++) {
+                verses.push(`${book.name} ${chapter}:${verse}`);
+            }
+        }
+        console.log(`Generated ${verses.length} verses for ${book.name}`);
+        return verses;
+    }
+    
+    console.log('Processing selection:', selection);
+    if (selection === 'all') {
+        // All Tanach
+        console.log('Getting all Tanach books');
+        const allBooks = getAllTanachBooks();
+        console.log('Found', allBooks.length, 'books in Tanach');
+        allBooks.forEach(book => {
+            verses = verses.concat(buildVerseReferences(book, verseData[book.name]));
+        });
+    } else if (selection === 'torah') {
+        // Torah only
+        console.log('Getting Torah books');
+        tanachData.torah.forEach(book => {
+            verses = verses.concat(buildVerseReferences(book, verseData[book.name]));
+        });
+    } else if (selection === 'neviim') {
+        // Neviim only
+        console.log('Getting Neviim books');
+        tanachData.neviim.forEach(book => {
+            verses = verses.concat(buildVerseReferences(book, verseData[book.name]));
+        });
+    } else if (selection === 'ketuvim') {
+        // Ketuvim only
+        console.log('Getting Ketuvim books');
+        tanachData.ketuvim.forEach(book => {
+            verses = verses.concat(buildVerseReferences(book, verseData[book.name]));
+        });
+    } else if (selection === 'custom' && customBook) {
+        // Custom book
+        console.log('Getting custom book:', customBook);
+        const allBooks = getAllTanachBooks();
+        const book = allBooks.find(b => b.name === customBook);
+        if (book) {
+            console.log('Found book:', book.name, 'with', book.chapters, 'chapters');
+            verses = buildVerseReferences(book, verseData[book.name]);
+        } else {
+            console.error('Custom book not found:', customBook);
+        }
+    } else {
+        console.error('Unknown selection type:', selection);
+    }
+    
+    console.log(`Returning ${verses.length} verses total`);
+    return verses;
+}
+
 // Helper function to get all chapters for selected Mishnah tractates
 function getMishnayotChaptersForSelection(selection, customSeder = null, customTractates = []) {
     let chapters = [];
@@ -255,4 +333,61 @@ function getMishnayotChaptersForSelection(selection, customSeder = null, customT
     }
     
     return chapters;
+}
+
+// Helper function to get all individual Mishnayot for selected tractates
+function getMishnayotIndividualForSelection(selection, customSeder = null, customTractates = []) {
+    let mishnayot = [];
+    
+    // Approximate counts of Mishnayot per chapter for each tractate
+    const mishnayotCounts = {
+        // Average number of Mishnayot per chapter for each tractate
+        // These are approximate and would need to be refined with actual counts
+        'Berakhot': [5, 8, 6, 7, 5, 8, 5, 8, 5],
+        'Peah': [6, 8, 8, 11, 8, 11, 8, 9],
+        'Shabbat': [11, 7, 6, 2, 4, 10, 4, 7, 7, 6, 6, 6, 7, 4, 3, 8, 8, 3, 6, 5, 3, 6, 5, 5]
+    };
+    
+    // Helper function to build individual Mishnah references
+    function buildMishnayotReferences(tractate) {
+        const mishnayot = [];
+        for (let chapter = 1; chapter <= tractate.chapters; chapter++) {
+            // If we have detailed mishnah counts, use them, otherwise estimate 8 mishnayot per chapter
+            const mishnayotCount = mishnayotCounts[tractate.name] ? mishnayotCounts[tractate.name][chapter-1] : 8;
+            for (let mishnah = 1; mishnah <= mishnayotCount; mishnah++) {
+                mishnayot.push(`${tractate.name} ${chapter}:${mishnah}`);
+            }
+        }
+        return mishnayot;
+    }
+    
+    if (selection === 'all') {
+        // All of Mishnayot
+        getAllMishnayotTractates().forEach(tractate => {
+            mishnayot = mishnayot.concat(buildMishnayotReferences(tractate));
+        });
+    } else if (selection === 'seder' && customSeder) {
+        // Check if we're studying specific tractates or the whole seder
+        const studyWholeSeder = document.getElementById('studyWholeSeder').checked;
+        
+        if (studyWholeSeder) {
+            // Specific Seder - all tractates
+            const tractates = mishnayotData[customSeder] || [];
+            tractates.forEach(tractate => {
+                mishnayot = mishnayot.concat(buildMishnayotReferences(tractate));
+            });
+        } else if (customTractates && customTractates.length > 0) {
+            // Specific tractates from the seder
+            const tractates = mishnayotData[customSeder] || [];
+            
+            customTractates.forEach(tractateName => {
+                const tractate = tractates.find(t => t.name === tractateName);
+                if (tractate) {
+                    mishnayot = mishnayot.concat(buildMishnayotReferences(tractate));
+                }
+            });
+        }
+    }
+    
+    return mishnayot;
 }
