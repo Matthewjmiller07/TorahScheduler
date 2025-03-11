@@ -48,4 +48,4 @@ No server-side components are required - everything runs in the browser.
 
 ## Live Demo
 
-You can access the live version of this application on GitHub Pages at [https://your-username.github.io/torah-scheduler](https://your-username.github.io/torah-scheduler).
+You can access the live version of this application on GitHub Pages at [https://matthewjmiller07.github.io/TorahScheduler](https://matthewjmiller07.github.io/TorahScheduler).
