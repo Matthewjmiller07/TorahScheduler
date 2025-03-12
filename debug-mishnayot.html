@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Mishnayot Counts</title>
+    <script src="js/data.js"></script>
+    <script>
+        function testNezikinCount() {
+            // Create a hidden checkbox for the studyWholeSeder option
+            if (!document.getElementById('studyWholeSeder')) {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = 'studyWholeSeder';
+                checkbox.checked = true;
+                checkbox.style.display = 'none';
+                document.body.appendChild(checkbox);
+            }
+            
+            // Test the Nezikin order count
+            console.clear();
+            console.log('Testing Nezikin order count...');
+            const mishnayot = getMishnayotIndividualForSelection('seder', 'nezikin');
+            
+            // Display results
+            document.getElementById('result').innerHTML = `
+                <h3>Results:</h3>
+                <p>Total mishnayot in Nezikin order: ${mishnayot.length}</p>
+                <p>Check the browser console for detailed logs.</p>
+            `;
+        }
+    </script>
+</head>
+<body>
+    <h1>Debug Mishnayot Counts</h1>
+    <button onclick="testNezikinCount()">Test Nezikin Order Count</button>
+    <div id="result"></div>
+</body>
+</html>

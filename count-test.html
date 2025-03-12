@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mishnayot Count Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .total-row { font-weight: bold; background-color: #e6f7ff; }
+    </style>
+</head>
+<body>
+    <h1>Mishnayot Count Test</h1>
+    <p>This page counts all mishnayot in the data.js file and compares with the expected count from the CSV.</p>
+    
+    <button id="countButton" style="padding: 10px; margin: 10px 0; background-color: #4CAF50; color: white; border: none; cursor: pointer;">Count Mishnayot</button>
+    
+    <div id="results"></div>
+    
+    <script src="js/data.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('countButton').addEventListener('click', countMishnayot);
+            
+            function countMishnayot() {
+            const resultsDiv = document.getElementById('results');
+            
+            // Count mishnayot from the mishnayotCounts object
+            let totalMishnayot = 0;
+            const tractateResults = [];
+            
+            // Loop through all tractates in mishnayotCounts
+            for (const tractate in mishnayotCounts) {
+                const chapterCounts = mishnayotCounts[tractate];
+                const tractateTotal = chapterCounts.reduce((sum, count) => sum + count, 0);
+                totalMishnayot += tractateTotal;
+                
+                tractateResults.push({
+                    tractate: tractate,
+                    chapters: chapterCounts.length,
+                    mishnayot: tractateTotal
+                });
+            }
+            
+            // Create a table to display the results
+            let tableHTML = `
+                <h2>Mishnayot Count by Tractate</h2>
+                <table>
+                    <tr>
+                        <th>Tractate</th>
+                        <th>Chapters</th>
+                        <th>Mishnayot</th>
+                    </tr>
+            `;
+            
+            // Add rows for each tractate
+            tractateResults.forEach(result => {
+                tableHTML += `
+                    <tr>
+                        <td>${result.tractate}</td>
+                        <td>${result.chapters}</td>
+                        <td>${result.mishnayot}</td>
+                    </tr>
+                `;
+            });
+            
+            // Add total row
+            tableHTML += `
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td>${tractateResults.reduce((sum, result) => sum + result.chapters, 0)}</td>
+                    <td>${totalMishnayot}</td>
+                </tr>
+            `;
+            
+            tableHTML += `</table>`;
+            
+            // Add comparison with expected count
+            const expectedCount = 4192;
+            const difference = totalMishnayot - expectedCount;
+            
+            tableHTML += `
+                <h2>Comparison with CSV</h2>
+                <p>Total mishnayot in data.js: <strong>${totalMishnayot}</strong></p>
+                <p>Expected count from CSV: <strong>${expectedCount}</strong></p>
+                <p>Difference: <strong>${difference}</strong> (${difference > 0 ? 'more' : 'fewer'} in data.js than CSV)</p>
+            `;
+            
+            resultsDiv.innerHTML = tableHTML;
+            }
+        });
+    </script>
+</body>
+</html>

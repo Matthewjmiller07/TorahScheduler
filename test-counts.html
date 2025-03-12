@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mishnayot Counts</title>
+    <script src="js/data.js"></script>
+</head>
+<body>
+    <h1>Mishnayot Count Test</h1>
+    <div id="results"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultsDiv = document.getElementById('results');
+            
+            // Count total mishnayot
+            let totalCount = 0;
+            let tractateCountsHTML = '<h2>Tractate Counts:</h2><ul>';
+            
+            for (const tractate in mishnayotCounts) {
+                const tractateCount = mishnayotCounts[tractate].reduce((a, b) => a + b, 0);
+                totalCount += tractateCount;
+                tractateCountsHTML += `<li>${tractate}: ${tractateCount} mishnayot</li>`;
+            }
+            tractateCountsHTML += '</ul>';
+            
+            resultsDiv.innerHTML = `
+                <h2>Total Mishnayot Count: ${totalCount}</h2>
+                ${tractateCountsHTML}
+            `;
+        });
+    </script>
+</body>
+</html>

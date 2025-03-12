@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mishnayot Count Test</title>
+</head>
+<body>
+    <h1>Mishnayot Count Test</h1>
+    <p>Check the console for results</p>
+    
+    <script src="js/data.js"></script>
+    <script>
+        // Test script to verify mishnayot counts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Count all individual mishnayot
+            const allMishnayot = getMishnayotIndividualForSelection('all');
+
+            // Count by tractate
+            const tractateCounts = {};
+            allMishnayot.forEach(unit => {
+                const tractateName = unit.split(' ')[0];
+                tractateCounts[tractateName] = (tractateCounts[tractateName] || 0) + 1;
+            });
+
+            // Display results
+            console.log('Mishnayot count by tractate:', tractateCounts);
+            console.log('Total mishnayot count:', allMishnayot.length);
+
+            // Compare with expected count
+            const expectedCount = 4192;
+            console.log(`Expected count from CSV: ${expectedCount}`);
+            console.log(`Difference: ${allMishnayot.length - expectedCount}`);
+        });
+    </script>
+</body>
+</html>

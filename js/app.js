@@ -257,11 +257,18 @@ function handleTanachSelectionChange() {
         childScheduleGroup.style.display = 'block';
         initializeChildScheduleForm();
         
-        // Force timeframe selection for child schedule and disable units per day
-        document.getElementById('timeframe').checked = true;
-        document.getElementById('chaptersPerDay').disabled = true;
-        document.getElementById('chaptersPerDayGroup').style.display = 'none';
-        document.getElementById('timeframeGroup').style.display = 'block';
+        // Check if the selected option is child schedule
+        if (selection === 'childSchedule') {
+            // Force timeframe selection for child schedule and disable units per day
+            document.getElementById('timeframe').checked = true;
+            document.getElementById('chaptersPerDay').disabled = true;
+            document.getElementById('chaptersPerDayGroup').style.display = 'none';
+            document.getElementById('timeframeGroup').style.display = 'block';
+        } else {
+            // Re-enable units per day option for other schedules
+            document.getElementById('chaptersPerDay').disabled = false;
+            document.getElementById('chaptersPerDayGroup').style.display = 'block';
+        }
     } else {
         bookSelectionGroup.style.display = 'none';
         chidonDivisionGroup.style.display = 'none';
@@ -1090,7 +1097,7 @@ function generateChildTanachSchedule() {
                     
                     
                     <h3>Schedule Information:</h3>
-                    <p><strong>Start Date (5th Hebrew birthday): </strong> ${formatDateForDisplay(startDate)}</p>
+                    <p><strong>Start Date:</strong> ${formatDateForDisplay(startDate)}</p>
                     <p><strong>End Date (10th Hebrew birthday):</strong> ${formatDateForDisplay(tenthBirthday)}</p>
                     <p><strong>Total Days:</strong> ${Math.round((tenthBirthday - startDate) / (1000 * 60 * 60 * 24))}</p>
                     <p><strong>Approximate Verses Per Day:</strong> ${Math.ceil(verses.length / (schedule.length || 1))}</p>
