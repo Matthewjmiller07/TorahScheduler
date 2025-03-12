@@ -225,12 +225,47 @@ function handleTanachSelectionChange() {
 }
 
 /**
- * Update the Chidon books information display
+ * Update the Chidon parts selection and books information display
  */
 function updateChidonBooksInfo() {
     const division = document.getElementById('chidonDivision').value;
+    const chidonPartsSelection = document.getElementById('chidonPartsSelection');
     const chidonBooksInfo = document.getElementById('chidonBooksInfo');
-    const chidonBooks = getChidonBooks(division);
+    const chidonParts = getChidonParts(division);
+    
+    // Generate checkboxes for parts selection
+    let partsHtml = '';
+    chidonParts.forEach(part => {
+        partsHtml += `
+        <div class="form-check">
+            <input class="form-check-input chidon-part" type="checkbox" value="${part.id}" id="${part.id}" checked>
+            <label class="form-check-label" for="${part.id}">
+                ${part.name}
+            </label>
+        </div>`;
+    });
+    chidonPartsSelection.innerHTML = partsHtml;
+    
+    // Add event listeners to update book info when parts are selected/deselected
+    document.querySelectorAll('.chidon-part').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedChidonBooks);
+    });
+    
+    // Update the books information display
+    updateSelectedChidonBooks();
+}
+
+/**
+ * Update the display of selected Chidon books based on selected parts
+ */
+function updateSelectedChidonBooks() {
+    const division = document.getElementById('chidonDivision').value;
+    const chidonBooksInfo = document.getElementById('chidonBooksInfo');
+    const selectedParts = document.querySelectorAll('.chidon-part:checked');
+    const selectedPartIds = Array.from(selectedParts).map(checkbox => checkbox.value);
+    
+    // Get books from selected parts
+    const chidonBooks = getChidonBooks(division, selectedPartIds);
     
     let html = '<ul class="mb-0">';
     chidonBooks.forEach(book => {
@@ -241,6 +276,10 @@ function updateChidonBooksInfo() {
         }
     });
     html += '</ul>';
+    
+    if (chidonBooks.length === 0) {
+        html = '<p class="text-muted">Please select at least one part to view books.</p>';
+    }
     
     chidonBooksInfo.innerHTML = html;
 }

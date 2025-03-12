@@ -6,21 +6,85 @@
 // Chidon curriculum data
 const chidonData = {
     // Middle School Division (Grades 6-8)
-    middleSchool: [
-        { name: "Deuteronomy", hebrewName: "דברים", chapters: 34, fullBook: true },
-        { name: "I Samuel", hebrewName: "שמואל א", chapters: 31, fullBook: true },
-        { name: "Ruth", hebrewName: "רות", chapters: 4, fullBook: true },
-        { name: "I Chronicles", hebrewName: "דברי הימים א", chapters: null, customChapters: [13, 14, 15, 16, 17, 21, 22, 28, 29] }
-    ],
+    middleSchool: {
+        parts: [
+            {
+                id: 'ms-part1',
+                name: 'Part 1: Deuteronomy',
+                books: [
+                    { name: "Deuteronomy", hebrewName: "דברים", chapters: 34, fullBook: true }
+                ]
+            },
+            {
+                id: 'ms-part2',
+                name: 'Part 2: I Samuel',
+                books: [
+                    { name: "I Samuel", hebrewName: "שמואל א", chapters: 31, fullBook: true }
+                ]
+            },
+            {
+                id: 'ms-part3',
+                name: 'Part 3: Ruth',
+                books: [
+                    { name: "Ruth", hebrewName: "רות", chapters: 4, fullBook: true }
+                ]
+            },
+            {
+                id: 'ms-part4',
+                name: 'Part 4: I Chronicles (Selected)',
+                books: [
+                    { name: "I Chronicles", hebrewName: "דברי הימים א", chapters: null, customChapters: [13, 14, 15, 16, 17, 21, 22, 28, 29] }
+                ]
+            }
+        ],
+        getAllBooks: function() {
+            return this.parts.flatMap(part => part.books);
+        }
+    },
     
     // High School Division (Grades 9-12)
-    highSchool: [
-        { name: "Deuteronomy", hebrewName: "דברים", chapters: 34, fullBook: true },
-        { name: "I Samuel", hebrewName: "שמואל א", chapters: 31, fullBook: true },
-        { name: "Ruth", hebrewName: "רות", chapters: 4, fullBook: true },
-        { name: "I Chronicles", hebrewName: "דברי הימים א", chapters: null, customChapters: [13, 14, 15, 16, 17, 21, 22, 28, 29] },
-        { name: "Jeremiah", hebrewName: "ירמיה", chapters: null, customChapters: [1, 2].concat([...Array(19).keys()].map(i => i + 18)) } // Chapters 1-2, 18-36
-    ]
+    highSchool: {
+        parts: [
+            {
+                id: 'hs-part1',
+                name: 'Part 1: Deuteronomy',
+                books: [
+                    { name: "Deuteronomy", hebrewName: "דברים", chapters: 34, fullBook: true }
+                ]
+            },
+            {
+                id: 'hs-part2',
+                name: 'Part 2: I Samuel',
+                books: [
+                    { name: "I Samuel", hebrewName: "שמואל א", chapters: 31, fullBook: true }
+                ]
+            },
+            {
+                id: 'hs-part3',
+                name: 'Part 3: Ruth',
+                books: [
+                    { name: "Ruth", hebrewName: "רות", chapters: 4, fullBook: true }
+                ]
+            },
+            {
+                id: 'hs-part4',
+                name: 'Part 4: I Chronicles (Selected)',
+                books: [
+                    { name: "I Chronicles", hebrewName: "דברי הימים א", chapters: null, customChapters: [13, 14, 15, 16, 17, 21, 22, 28, 29] }
+                ]
+            },
+            {
+                id: 'hs-part5',
+                name: 'Part 5: Jeremiah (Selected)',
+                books: [
+                    { name: "Jeremiah", hebrewName: "ירמיה", chapters: null, customChapters: [1, 2].concat([...Array(19).keys()].map(i => i + 18)) } // Chapters 1-2, 18-36
+                ]
+            }
+        ],
+        getAllBooks: function() {
+            return this.parts.flatMap(part => part.books);
+        }
+    }
 };
 
 // Tanach data organization
@@ -173,11 +237,33 @@ function getAllTanachBooks() {
 }
 
 // Helper function to get books for Chidon curriculum
-function getChidonBooks(division) {
+function getChidonBooks(division, selectedParts = []) {
     if (!division || !chidonData[division]) {
         return [];
     }
-    return chidonData[division];
+    
+    // If no specific parts are selected, return all books for the division
+    if (!selectedParts || selectedParts.length === 0) {
+        return chidonData[division].getAllBooks();
+    }
+    
+    // Return only books from the selected parts
+    const books = [];
+    chidonData[division].parts.forEach(part => {
+        if (selectedParts.includes(part.id)) {
+            books.push(...part.books);
+        }
+    });
+    
+    return books;
+}
+
+// Helper function to get parts for a Chidon division
+function getChidonParts(division) {
+    if (!division || !chidonData[division]) {
+        return [];
+    }
+    return chidonData[division].parts;
 }
 
 // Helper function to get all tractates from Mishnah
@@ -239,7 +325,9 @@ function getChaptersForSelection(selection, customBook = null, chidonDivision = 
         }
     } else if (selection === 'chidon' && chidonDivision) {
         // Chidon curriculum
-        const chidonBooks = getChidonBooks(chidonDivision);
+        const selectedParts = document.querySelectorAll('.chidon-part:checked');
+        const selectedPartIds = Array.from(selectedParts).map(checkbox => checkbox.value);
+        const chidonBooks = getChidonBooks(chidonDivision, selectedPartIds);
         
         chidonBooks.forEach(book => {
             if (book.fullBook && book.chapters) {
@@ -330,7 +418,10 @@ function getTanachVersesForSelection(selection, customBook = null, chidonDivisio
     } else if (selection === 'chidon' && chidonDivision) {
         // Chidon curriculum
         console.log('Getting Chidon books for division:', chidonDivision);
-        const chidonBooks = getChidonBooks(chidonDivision);
+        const selectedParts = document.querySelectorAll('.chidon-part:checked');
+        const selectedPartIds = Array.from(selectedParts).map(checkbox => checkbox.value);
+        console.log('Selected part IDs:', selectedPartIds);
+        const chidonBooks = getChidonBooks(chidonDivision, selectedPartIds);
         
         chidonBooks.forEach(book => {
             if (book.fullBook && book.chapters) {
