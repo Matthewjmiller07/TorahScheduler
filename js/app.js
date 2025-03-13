@@ -6,6 +6,14 @@
 /**
  * Show a status message
  */
+/**
+ * Torah Schedule Creator - Main Application Logic
+ * Handles UI interactions, schedule generation, and file downloads
+ */
+
+/**
+ * Show a status message
+ */
 function showMessage(message) {
     console.log(message);
     // Fall back to alert for important messages
@@ -15,15 +23,66 @@ function showMessage(message) {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize date pickers
     initializeDatePickers();
-    
+
     // Initialize form event listeners
     initializeFormListeners();
-    
+
     // Initialize book selection dropdowns
     populateBookSelections();
-    
+
     // Initialize Mishnah selection dropdowns
     populateMishnayotSelections();
+
+    // Fetch learning of the day
+    fetchLearningOfTheDay('Genesis 1:1');
+
+    // Initialize checkbox state and visibility
+    const chaptersPerDayCheckbox = document.getElementById('chaptersPerDayCheckbox');
+    const timeframeCheckbox = document.getElementById('timeframeCheckbox');
+    const chaptersPerDayInputGroup = document.getElementById('chaptersPerDayInputGroup');
+    const timeframeInputGroup = document.getElementById('timeframeInputGroup');
+    const chaptersPerDayInput = document.getElementById('chaptersPerDayInput');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    function updateInputVisibility() {
+        if (chaptersPerDayCheckbox.checked && timeframeCheckbox.checked) {
+            chaptersPerDayInputGroup.style.display = 'block';
+            timeframeInputGroup.style.display = 'block';
+            chaptersPerDayInput.disabled = false;
+            startDateInput.disabled = false;
+            endDateInput.disabled = false;
+        } else if (chaptersPerDayCheckbox.checked) {
+            chaptersPerDayInputGroup.style.display = 'block';
+            timeframeInputGroup.style.display = 'none';
+            chaptersPerDayInput.disabled = false;
+            startDateInput.disabled = true;
+            endDateInput.disabled = true;
+        } else if (timeframeCheckbox.checked) {
+            chaptersPerDayInputGroup.style.display = 'none';
+            timeframeInputGroup.style.display = 'block';
+            chaptersPerDayInput.disabled = true;
+            startDateInput.disabled = false;
+            endDateInput.disabled = false;
+        } else {
+            chaptersPerDayInputGroup.style.display = 'none';
+            timeframeInputGroup.style.display = 'none';
+            chaptersPerDayInput.disabled = true;
+            startDateInput.disabled = true;
+            endDateInput.disabled = true;
+        }
+    }
+
+    chaptersPerDayCheckbox.addEventListener('change', updateInputVisibility);
+    timeframeCheckbox.addEventListener('change', updateInputVisibility);
+
+    // Initial setup
+    updateInputVisibility();
+
+    // Make "Units per day" and "Set timeframe" checked by default
+    chaptersPerDayCheckbox.checked = true;
+    timeframeCheckbox.checked = true;
+    updateInputVisibility(); // Call again to reflect initial checkbox state
 });
 
 /**
@@ -31,13 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function initializeDatePickers() {
     const today = new Date();
-    
+
     // Tanach date pickers
     const startDatePicker = flatpickr('#startDate', {
         dateFormat: 'Y-m-d',
         defaultDate: today
     });
-    
+
     flatpickr('#endDate', {
         dateFormat: 'Y-m-d',
         defaultDate: '',
@@ -51,13 +110,13 @@ function initializeDatePickers() {
             }
         }
     });
-    
+
     // Mishnayot date pickers
     flatpickr('#mishnayotStartDate', {
         dateFormat: 'Y-m-d',
         defaultDate: today
     });
-    
+
     flatpickr('#mishnayotEndDate', {
         dateFormat: 'Y-m-d',
         defaultDate: '',
@@ -71,13 +130,13 @@ function initializeDatePickers() {
             }
         }
     });
-    
+
     // Child schedule date pickers
     flatpickr('#childBirthdate', {
         dateFormat: 'Y-m-d',
         defaultDate: ''
     });
-    
+
     flatpickr('#customStartDate', {
         dateFormat: 'Y-m-d',
         defaultDate: ''
@@ -90,7 +149,7 @@ function initializeDatePickers() {
  */
 function parseDate(dateStr) {
     if (!dateStr) return new Date();
-    
+
     const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
     return new Date(year, month - 1, day); // Month is 0-indexed in JavaScript Date
 }
@@ -102,39 +161,45 @@ function initializeFormListeners() {
     // Tanach form listeners
     document.getElementById('tanachSelection').addEventListener('change', handleTanachSelectionChange);
     document.getElementById('chidonDivision').addEventListener('change', updateChidonBooksInfo);
-    
+
     const scheduleTypeRadios = document.querySelectorAll('input[name="scheduleType"]');
     scheduleTypeRadios.forEach(radio => {
         radio.addEventListener('change', handleScheduleTypeChange);
     });
-    
+
     document.getElementById('generateScheduleBtn').addEventListener('click', generateTanachSchedule);
-    
+
     // Child schedule form listeners
     document.getElementById('useCustomStartDate').addEventListener('change', function() {
-        document.getElementById('customStartDateGroup').style.display = 
+        document.getElementById('customStartDateGroup').style.display =
             this.checked ? 'block' : 'none';
     });
-    
+
     document.getElementById('childBirthdate').addEventListener('change', updateChildScheduleInfo);
     document.getElementById('customStartDate').addEventListener('change', updateChildScheduleInfo);
     document.getElementById('useCustomStartDate').addEventListener('change', updateChildScheduleInfo);
-    
+
     // Mishnayot form listeners
     document.getElementById('mishnayotSelection').addEventListener('change', handleMishnayotSelectionChange);
-    
+
     const mishnayotScheduleTypeRadios = document.querySelectorAll('input[name="mishnayotScheduleType"]');
     mishnayotScheduleTypeRadios.forEach(radio => {
         radio.addEventListener('change', handleMishnayotScheduleTypeChange);
     });
-    
+
     document.getElementById('sederSelection').addEventListener('change', handleSederSelectionChange);
     document.getElementById('studyWholeSeder').addEventListener('change', handleStudyWholeSederChange);
     document.getElementById('generateMishnayotScheduleBtn').addEventListener('click', generateMishnayotSchedule);
-    
+
     // Download buttons
     document.getElementById('downloadCsvBtn').addEventListener('click', downloadScheduleCSV);
     document.getElementById('downloadIcsBtn').addEventListener('click', downloadScheduleICS);
+
+    // Event listener for fetching learning based on user input
+    document.getElementById('fetchLearningBtn').addEventListener('click', function() {
+        const reference = document.getElementById('sefariaReference').value;
+        fetchLearningOfTheDay(reference);
+    });
 }
 
 /**
@@ -236,47 +301,70 @@ function populateTractateOptions(showAll = false) {
 /**
  * Handle change in Tanach selection dropdown
  */
+/**
+ * Handle change in Tanach selection dropdown
+ */
 function handleTanachSelectionChange() {
     const selection = document.getElementById('tanachSelection').value;
     const bookSelectionGroup = document.getElementById('bookSelectionGroup');
     const chidonDivisionGroup = document.getElementById('chidonDivisionGroup');
     const childScheduleGroup = document.getElementById('childScheduleGroup');
-    
+    const chaptersPerDayGroup = document.getElementById('chaptersPerDayGroup');
+    const timeframeGroup = document.getElementById('timeframeGroup');
+    const chaptersPerDayInput = document.getElementById('chaptersPerDayInput');
+    const chaptersPerDayCheckbox = document.getElementById('chaptersPerDayCheckbox');
+    const timeframeCheckbox = document.getElementById('timeframeCheckbox');
+
     if (selection === 'custom') {
         bookSelectionGroup.style.display = 'block';
         chidonDivisionGroup.style.display = 'none';
         childScheduleGroup.style.display = 'none';
+
+        resetDatePickers();
+        timeframeGroup.style.display = timeframeCheckbox.checked ? 'block' : 'none';
+        chaptersPerDayGroup.style.display = chaptersPerDayCheckbox.checked ? 'block' : 'none';
+        chaptersPerDayInput.disabled = !chaptersPerDayCheckbox.checked;
     } else if (selection === 'chidon') {
         bookSelectionGroup.style.display = 'none';
         chidonDivisionGroup.style.display = 'block';
         childScheduleGroup.style.display = 'none';
+
         updateChidonBooksInfo();
     } else if (selection === 'childSchedule') {
         bookSelectionGroup.style.display = 'none';
         chidonDivisionGroup.style.display = 'none';
         childScheduleGroup.style.display = 'block';
         initializeChildScheduleForm();
-        
-        // Check if the selected option is child schedule
-        if (selection === 'childSchedule') {
-            // Force timeframe selection for child schedule and disable units per day
-            document.getElementById('timeframe').checked = true;
-            document.getElementById('chaptersPerDay').disabled = true;
-            document.getElementById('chaptersPerDayGroup').style.display = 'none';
-            document.getElementById('timeframeGroup').style.display = 'block';
-        } else {
-            // Re-enable units per day option for other schedules
-            document.getElementById('chaptersPerDay').disabled = false;
-            document.getElementById('chaptersPerDayGroup').style.display = 'block';
-        }
     } else {
         bookSelectionGroup.style.display = 'none';
         chidonDivisionGroup.style.display = 'none';
         childScheduleGroup.style.display = 'none';
-        
-        // Re-enable units per day option
-        document.getElementById('chaptersPerDay').disabled = false;
+        timeframeGroup.style.display = timeframeCheckbox.checked ? 'block' : 'none';
+        chaptersPerDayGroup.style.display = chaptersPerDayCheckbox.checked ? 'block' : 'none';
+        chaptersPerDayInput.disabled = !chaptersPerDayCheckbox.checked;
     }
+}
+
+/**
+ * Reset date pickers to today's date and ensure UI elements are correctly updated
+ */
+/**
+ * Reset date pickers to today's date and ensure UI elements are correctly updated
+ */
+function resetDatePickers() {
+    const today = new Date();
+    const formattedToday = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    document.getElementById('startDate').value = formattedToday;  // ✅ Set default start date
+    document.getElementById('endDate').value = ''; // Clear end date
+
+    document.getElementById('mishnayotStartDate').value = formattedToday;
+    document.getElementById('mishnayotEndDate').value = ''; // Clear end date
+
+    document.getElementById('chaptersPerDayInput').value = ''; // Clear units per day input
+    document.getElementById('chaptersPerDayInput').disabled = false; // Re-enable units per day if disabled
+
+    console.log('🛠 Date pickers and UI elements reset. Start date set to today:', formattedToday);
 }
 
 /**
@@ -461,6 +549,8 @@ function updateChildScheduleInfo() {
                 
                 // Get Hebrew date components again for 10th birthday calculation
                 const birthDateStr = `${birthYear}-${birthMonth.toString().padStart(2, '0')}-${birthDay.toString().padStart(2, '0')}`;
+                
+                // Fetch Hebrew date from Hebcal API
                 return Promise.all([
                     fifthBirthday,
                     fifthHebrewDateFormatted,
@@ -503,7 +593,6 @@ function updateChildScheduleInfo() {
                 
                 // Store 10th Hebrew birthday information with proper month name
                 // Use our improved getHebrewMonthName function to get the month name
-                const tenthBirthdayData = data; // Store the entire API response for later use
                 const tenthHebrewMonthName = getHebrewMonthName(data);
                 const tenthHebrewDateFormatted = `${data.hebrew} (${data.hd} ${tenthHebrewMonthName} ${data.hy})`;
                 
@@ -663,74 +752,77 @@ function generateTanachSchedule() {
         alert('Please enter a name for the schedule');
         return;
     }
-    
+
     const tanachSelection = document.getElementById('tanachSelection').value;
-    
+
     // Handle child schedule option separately
     if (tanachSelection === 'childSchedule') {
         generateChildTanachSchedule();
         return;
     }
-    
+
     const customBook = tanachSelection === 'custom' ? document.getElementById('bookSelection').value : null;
     const chidonDivision = tanachSelection === 'chidon' ? document.getElementById('chidonDivision').value : null;
-    
+
     // Get selected weekdays
     const selectedDays = [];
     document.querySelectorAll('.weekday:checked').forEach(checkbox => {
         selectedDays.push(parseInt(checkbox.value));
     });
-    
+
     if (selectedDays.length === 0) {
         alert('Please select at least one day of the week for study');
         return;
     }
-    
+
     // Get schedule type and related values
-    const scheduleType = document.querySelector('input[name="scheduleType"]:checked').value;
+    const chaptersPerDayCheckbox = document.getElementById('chaptersPerDayCheckbox');
+    const timeframeCheckbox = document.getElementById('timeframeCheckbox');
     let startDate, endDate, unitsPerDay;
     const tanachStudyUnitType = document.getElementById('studyUnitType').value;
-    
-    if (scheduleType === 'chaptersPerDay') {
+
+    if (chaptersPerDayCheckbox.checked) {
         unitsPerDay = parseInt(document.getElementById('chaptersPerDayInput').value);
         if (unitsPerDay < 1) {
             alert(`Please enter a valid number of ${tanachStudyUnitType} per day`);
             return;
         }
-        
-        // Parse the date string correctly to avoid timezone issues
-        const startDateStr = document.getElementById('startDate').value;
-        startDate = startDateStr ? parseDate(startDateStr) : new Date();
-        // End date will be calculated based on chapters per day
-    } else {
-        const startDateStr = document.getElementById('startDate').value;
-        startDate = parseDate(startDateStr);
-        
-        if (!startDate) {
+
+        const startDateInput = document.getElementById('startDate');
+        if (startDateInput && startDateInput.value) {
+            startDate = flatpickr.parseDate(startDateInput.value, 'Y-m-d');
+        } else {
+            startDate = new Date(); // Default to today if no start date is provided
+        }
+    } else if (timeframeCheckbox.checked) {
+        const startDateInput = document.getElementById('startDate');
+        if (startDateInput && startDateInput.value) {
+            startDate = flatpickr.parseDate(startDateInput.value, 'Y-m-d');
+        } else {
             alert('Please enter a valid start date');
             return;
         }
-        
-        // Check if end date is provided
-        const endDateStr = document.getElementById('endDate').value;
-        if (endDateStr && endDateStr.trim() !== '') {
-            endDate = parseDate(endDateStr);
-            
-            if (!endDate || startDate >= endDate) {
+
+        const endDateInput = document.getElementById('endDate');
+        if (endDateInput && endDateInput.value) {
+            endDate = flatpickr.parseDate(endDateInput.value, 'Y-m-d');
+            if (startDate >= endDate) {
                 alert('Please enter a valid end date that is after the start date');
                 return;
             }
         } else {
-            // If no end date is specified, set end date to start date (complete all on start date)
-            endDate = new Date(startDate);
+            endDate = null; // End date is optional
         }
+    } else {
+        // Handle case where neither checkbox is checked
+        alert('Please select either Units per day or Set timeframe');
+        return;
     }
-    
+
     // Get chapters or verses for the selected books
     let units = [];
-    // Use the already declared tanachStudyUnitType variable
     console.log('Tanach study unit type selected:', tanachStudyUnitType);
-    
+
     if (tanachStudyUnitType === 'chapters') {
         units = getChaptersForSelection(tanachSelection, customBook, chidonDivision);
         console.log('Chapters retrieved:', units.length);
@@ -741,13 +833,13 @@ function generateTanachSchedule() {
     } else {
         console.error('Unknown study unit type:', tanachStudyUnitType);
     }
-    
+
     if (units.length === 0) {
         console.error('No units found for selection');
         alert(`No ${tanachStudyUnitType} found for the selected books`);
         return;
     }
-    
+
     // Generate the schedule
     console.log('About to generate schedule with:', {
         unitsCount: units.length,
@@ -759,7 +851,7 @@ function generateTanachSchedule() {
     });
     const { schedule, chaptersInfo } = generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, tanachStudyUnitType);
     console.log('Schedule generated with', schedule.length, 'days');
-    
+
     // Display the schedule
     displaySchedule(schedule, name, chaptersInfo);
 }
@@ -774,213 +866,63 @@ function generateChildTanachSchedule() {
         alert('Please enter the child\'s name');
         return;
     }
-    
+
     const birthdateStr = document.getElementById('childBirthdate').value;
     if (!birthdateStr) {
         alert('Please enter the child\'s birth date');
         return;
     }
-    
+
     const birthDate = parseDate(birthdateStr);
     if (!birthDate) {
         alert('Please enter a valid birth date');
         return;
     }
-    
-    // Get selected weekdays - use the regular weekday class since childWeekday doesn't exist
+
+    // Get selected weekdays
     const selectedDays = [];
     document.querySelectorAll('.weekday:checked').forEach(checkbox => {
         selectedDays.push(parseInt(checkbox.value));
     });
-    
+
     if (selectedDays.length === 0) {
         alert('Please select at least one day of the week for study');
         return;
     }
-    
-    // We'll handle the schedule generation without showing a loading message
-    
-    // Clear any existing schedule to prevent duplication
-    const tableBody = document.getElementById('scheduleTableBody');
-    if (tableBody) {
-        tableBody.innerHTML = '';
-    }
-    
+
     // Format date for API call (YYYY-MM-DD)
     const birthYear = birthDate.getFullYear();
     const birthMonth = birthDate.getMonth() + 1; // JavaScript months are 0-indexed
     const birthDay = birthDate.getDate();
     const dateStr = `${birthYear}-${birthMonth.toString().padStart(2, '0')}-${birthDay.toString().padStart(2, '0')}`;
-    
+
     // Get Hebrew date and calculate 5th and 10th Hebrew birthdays
     fetch(`https://www.hebcal.com/converter?cfg=json&date=${dateStr}&g2h=1`)
         .then(response => response.json())
         .then(data => {
-            // Debug: Log the complete API response with detailed property inspection
-            console.log('Hebcal API response for birth date:', data);
-            console.log('Birth date month properties:', {
-                hm: data.hm,
-                hm_type: typeof data.hm,
-                month: data.month,
-                month_type: typeof data.month,
-                hebrew: data.hebrew,
-                hd: data.hd,
-                hy: data.hy
-            });
-            // Store original Hebrew date information - ensure month name is included
-            const originalHebrewDate = data.hebrew;
-            // Store the complete birth date data for later use
-            const birthDateData = data; // Store the entire API response for later use
-            
-            // Enhanced logging for debugging the birth date Hebrew month name
-            console.log('BIRTH DATE DEBUG - Complete API response:', JSON.stringify(data, null, 2));
-            console.log('BIRTH DATE DEBUG - Month name sources:', {
-                hm: data.hm,
-                hm_type: typeof data.hm,
-                month: data.month,
-                month_type: typeof data.month,
-                hebrew: data.hebrew,
-                heDateParts: data.heDateParts ? data.heDateParts : null,
-                heDateParts_m: data.heDateParts ? data.heDateParts.m : null
-            });
-            
-            // Try to get the Hebrew month name from different sources
-            let originalHebrewMonthName = data.hm;
-            
-            // If hm is not available, try heDateParts.m
-            if (!originalHebrewMonthName && data.heDateParts && data.heDateParts.m) {
-                originalHebrewMonthName = data.heDateParts.m;
-                console.log('BIRTH DATE DEBUG - Using heDateParts.m:', originalHebrewMonthName);
-            }
-            
-            // If still not available, try to extract from the Hebrew date string
-            if (!originalHebrewMonthName && data.hebrew) {
-                try {
-                    // Hebrew date format is typically like: כ״ז בַּאֲדָר א׳ תשפ״ד
-                    // Split by spaces and get the second part (the month with prefix)
-                    const parts = data.hebrew.split(' ');
-                    if (parts.length >= 2) {
-                        // The month is the second part, sometimes with a prefix ב
-                        let monthPart = parts[1];
-                        // Remove the prefix if present (like בַּ)
-                        if (monthPart.startsWith('בַּ') || monthPart.startsWith('בְּ')) {
-                            monthPart = monthPart.substring(2);
-                        }
-                        originalHebrewMonthName = monthPart;
-                        console.log('BIRTH DATE DEBUG - Extracted from Hebrew string:', monthPart);
-                    }
-                } catch (e) {
-                    console.error('BIRTH DATE DEBUG - Error extracting month:', e);
-                }
-            }
-            
-            // Final fallback - use a hardcoded mapping based on month ID
-            if (!originalHebrewMonthName || originalHebrewMonthName === 'undefined') {
-                const hebrewMonths = [
-                    'Nisan', 'Iyar', 'Sivan', 'Tammuz', 'Av', 'Elul',
-                    'Tishrei', 'Cheshvan', 'Kislev', 'Tevet', 'Shevat', 'Adar', 'Adar II'
-                ];
-                
-                if (data.hm_id && data.hm_id > 0 && data.hm_id <= hebrewMonths.length) {
-                    originalHebrewMonthName = hebrewMonths[data.hm_id - 1];
-                    console.log('BIRTH DATE DEBUG - Using month from hm_id:', originalHebrewMonthName);
-                }
-            }
-            
-            console.log('BIRTH DATE DEBUG - Final month name:', originalHebrewMonthName);
-            // Simply use the Hebrew date directly from the API
-            // No need to parse or extract the month name separately
-            const originalHebrewDateFormatted = `${originalHebrewDate} (${data.hd} ${data.hm} ${data.hy})`;
-            
-            // Log the formatted date for debugging
-            console.log('Formatted birth date:', {
-                original: originalHebrewDate,
-                monthName: originalHebrewMonthName,
-                formatted: originalHebrewDateFormatted
-            });
-            
-            // Get Hebrew date components
             const hebrewYear = data.hy;
             const hebrewMonth = data.hm;
             const hebrewDay = data.hd;
-            
-            // Calculate 5th Hebrew birthday
+
             return Promise.all([
                 fetch(`https://www.hebcal.com/converter?cfg=json&hy=${hebrewYear + 5}&hm=${hebrewMonth}&hd=${hebrewDay}&h2g=1`),
-                originalHebrewDateFormatted,
-                data
+                fetch(`https://www.hebcal.com/converter?cfg=json&hy=${hebrewYear + 10}&hm=${hebrewMonth}&hd=${hebrewDay}&h2g=1`)
             ]);
         })
-        .then(([response, originalHebrewDateFormatted, originalData]) => {
+        .then(([fifthBirthdayResponse, tenthBirthdayResponse]) => {
             return Promise.all([
-                response.json(),
-                originalHebrewDateFormatted,
-                originalData
+                fifthBirthdayResponse.json(),
+                tenthBirthdayResponse.json()
             ]);
         })
-        .then(([fifthBirthdayData, originalHebrewDateFormatted, originalData]) => {
-            // Get Gregorian date for 5th Hebrew birthday
+        .then(([fifthBirthdayData, tenthBirthdayData]) => {
             const fifthBirthday = new Date(fifthBirthdayData.gy, fifthBirthdayData.gm - 1, fifthBirthdayData.gd);
-            
-            // Format 5th Hebrew birthday for display - ensure month name is included
-            const fifthHebrewMonthName = fifthBirthdayData.hm_name || fifthBirthdayData.month;
-            const fifthHebrewDateFormatted = `${fifthBirthdayData.hebrew} (${fifthBirthdayData.hd} ${fifthHebrewMonthName} ${fifthBirthdayData.hy})`;
-            
-            // Calculate 10th Hebrew birthday
-            const hebrewYear = originalData.hy;
-            const hebrewMonth = originalData.hm;
-            const hebrewDay = originalData.hd;
-            
-            return Promise.all([
-                fifthBirthday,
-                fifthHebrewDateFormatted,
-                fetch(`https://www.hebcal.com/converter?cfg=json&hy=${hebrewYear + 10}&hm=${hebrewMonth}&hd=${hebrewDay}&h2g=1`),
-                originalHebrewDateFormatted,
-                originalData
-            ]);
-        })
-        .then(([fifthBirthday, fifthHebrewDateFormatted, response, originalHebrewDateFormatted, originalData]) => {
-            return Promise.all([
-                fifthBirthday,
-                fifthHebrewDateFormatted,
-                response.json(),
-                originalHebrewDateFormatted,
-                originalData
-            ]);
-        })
-        .then(([fifthBirthday, fifthHebrewDateFormatted, tenthBirthdayData, originalHebrewDateFormatted, originalData]) => {
-            // Debug: Log the 10th birthday API response with detailed property inspection
-            console.log('Hebcal API response for 10th birthday:', tenthBirthdayData);
-            console.log('10th birthday month properties:', {
-                hm: tenthBirthdayData.hm,
-                hm_type: typeof tenthBirthdayData.hm,
-                month: tenthBirthdayData.month,
-                month_type: typeof tenthBirthdayData.month,
-                hebrew: tenthBirthdayData.hebrew,
-                hd: tenthBirthdayData.hd,
-                hy: tenthBirthdayData.hy
-            });
-            
-            // Get Gregorian date for 10th Hebrew birthday
             const tenthBirthday = new Date(tenthBirthdayData.gy, tenthBirthdayData.gm - 1, tenthBirthdayData.gd);
-            
-            // Format 10th Hebrew birthday for display - ensure month name is included
-            // Use our improved getHebrewMonthName function to get the month name
-            const tenthHebrewMonthName = getHebrewMonthName(tenthBirthdayData);
-            const tenthHebrewDateFormatted = `${tenthBirthdayData.hebrew} (${tenthBirthdayData.hd} ${tenthHebrewMonthName} ${tenthBirthdayData.hy})`;
-            
-            // Log the formatted date for debugging
-            console.log('Formatted 10th birthday:', {
-                original: tenthBirthdayData.hebrew,
-                monthName: tenthHebrewMonthName,
-                formatted: tenthHebrewDateFormatted
-            });
-            
-            // Determine start date
+
             let startDate = fifthBirthday;
             const today = new Date();
             const useCustom = document.getElementById('useCustomStartDate').checked;
-            
+
             if (useCustom) {
                 const customStartStr = document.getElementById('customStartDate').value;
                 if (customStartStr) {
@@ -991,127 +933,46 @@ function generateChildTanachSchedule() {
                     }
                 }
             } else if ((today - birthDate) / (1000 * 60 * 60 * 24 * 365) >= 5) {
-                // If child is already older than 5, use today as start date
                 startDate = today;
             }
-            
-            // Get all Tanach verses
+
             const verses = getTanachVersesForSelection('all');
-            
+
             if (verses.length === 0) {
                 alert('Error: Could not retrieve Tanach verses');
                 return;
             }
-            
-            // Generate the schedule with special distribution for child
-            const saturdayEmphasis = document.getElementById('saturdayEmphasis').checked;
-            
-            // Create a custom schedule with balanced distribution
-            const schedule = generateChildSchedule(verses, startDate, tenthBirthday, selectedDays, saturdayEmphasis);
-            
+
+            const scheduleName = `${childName}'s Tanach Schedule (Ages 5-10)`;
+
+            // Call the existing generateSchedule function
+            const { schedule, chaptersInfo } = generateSchedule(verses, startDate, tenthBirthday, null, selectedDays, 'verses');
+
             // Display the schedule
-            const scheduleName = `${childName}'s Tanach Schedule (Ages 5-10, Hebrew Birthday)`;
-            
-            // Calculate child's age more precisely
-            // Use current date for age calculation
-            const currentDate = new Date();
-            const ageInMilliseconds = currentDate - birthDate;
-            const ageInYears = ageInMilliseconds / (1000 * 60 * 60 * 24 * 365.25);
-            const childAge = Math.max(0, Math.floor(ageInYears));
-            console.log('Child\'s age calculation:', { birthDate, currentDate, ageInYears, childAge });
-            
-            // Update the timeframe in the UI first
-            document.getElementById('timeframe').checked = true;
-            // Trigger the change event to show the timeframe group
-            document.getElementById('timeframe').dispatchEvent(new Event('change'));
-            
-            // Set the timeframe values - use the values that were already set by the Hebrew date calculations
-            const tanachStartDate = document.getElementById('startDate');
-            const tanachEndDate = document.getElementById('endDate');
-            
-            // Only update if they haven't been set already
-            if (tanachStartDate && tanachEndDate) {
-                // Log the current values for debugging
-                console.log('Current start date value:', tanachStartDate.value);
-                console.log('Current end date value:', tanachEndDate.value);
-                
-                // Only set if empty
-                if (!tanachStartDate.value) {
-                    tanachStartDate.value = formatDateForInput(startDate);
-                    console.log('Updated start date to:', formatDateForInput(startDate));
-                }
-                
-                if (!tanachEndDate.value) {
-                    tanachEndDate.value = formatDateForInput(tenthBirthday);
-                    console.log('Updated end date to:', formatDateForInput(tenthBirthday));
-                }
-            }
-            
-            // Create a single div for the schedule information
-            // First, remove ALL existing schedule info divs to prevent duplication
-            const existingScheduleInfos = document.querySelectorAll('.schedule-info');
-            existingScheduleInfos.forEach(div => {
-                if (div && div.parentNode) {
-                    div.parentNode.removeChild(div);
-                }
-            });
-            
-            const scheduleInfoDiv = document.createElement('div');
-            scheduleInfoDiv.className = 'schedule-info';
-            
-            // Format Hebrew dates properly for display using data from the API responses
-            try {
-                // The birthDateData variable is already defined in the outer scope from the first API call
-                
-                // Use the hebrew property directly from the API responses
-                const birthDateHebrew = originalHebrewDate;
-                const birthDateMonthName = getHebrewMonthName(birthDateData);
-                
-                // Use data from the 5th birthday API response
-                const fifthBirthdayHebrew = data.hebrew;
-                const fifthHebrewMonthName = getHebrewMonthName(data);
-                
-                // Use data from the 10th birthday API response
-                const tenthBirthdayHebrew = tenthBirthdayData.hebrew;
-                const tenthHebrewMonthName = getHebrewMonthName(tenthBirthdayData);
-                
-                // Update the date fields in the form
-                const tanachStartDate = document.getElementById('startDate');
-                const tanachEndDate = document.getElementById('endDate');
-                if (tanachStartDate && tanachEndDate) {
-                    tanachStartDate.value = formatDateForInput(startDate);
-                    tanachEndDate.value = formatDateForInput(tenthBirthday);
-                }
-                
-                // Create the schedule info content
-                scheduleInfoDiv.innerHTML = `
-    <h3>Schedule Information:</h3>
-    <p><strong>Start Date:</strong> ${formatDateForDisplay(startDate)}</p>
-    <p><strong>End Date (10th Hebrew birthday):</strong> ${formatDateForDisplay(tenthBirthday)}</p>
-    <p><strong>Total Days:</strong> ${Math.round((tenthBirthday - startDate) / (1000 * 60 * 60 * 24))}</p>
-    <p><strong>Approximate Verses Per Day:</strong> ${Math.ceil(verses.length / (schedule.length || 1))}</p>
-`;
-            } catch (error) {
-                console.error('Error formatting Hebrew dates:', error);
-                scheduleInfoDiv.innerHTML = `
-                    
-                    
-                    <h3>Schedule Information:</h3>
-                    <p><strong>Start Date:</strong> ${formatDateForDisplay(startDate)}</p>
-                    <p><strong>End Date (10th Hebrew birthday):</strong> ${formatDateForDisplay(tenthBirthday)}</p>
-                    <p><strong>Total Days:</strong> ${Math.round((tenthBirthday - startDate) / (1000 * 60 * 60 * 24))}</p>
-                    <p><strong>Approximate Verses Per Day:</strong> ${Math.ceil(verses.length / (schedule.length || 1))}</p>
-                `;
-            }
-            
-            // Display the schedule with the schedule info
-            displaySchedule(schedule, scheduleName, scheduleInfoDiv);
+            displaySchedule(schedule, scheduleName, createChildScheduleInfoDiv(startDate, tenthBirthday, verses, chaptersInfo));
         })
         .catch(error => {
             console.error('Error calculating Hebrew dates:', error);
             alert(`Error calculating Hebrew dates: ${error.message}`);
         });
 }
+
+function createChildScheduleInfoDiv(startDate, endDate, verses, chaptersInfo) {
+    const scheduleInfoDiv = document.createElement('div');
+    scheduleInfoDiv.className = 'schedule-info';
+
+    scheduleInfoDiv.innerHTML = `
+        <h3>Schedule Information:</h3>
+        <p><strong>Start Date:</strong> ${formatDateForDisplay(startDate)}</p>
+        <p><strong>End Date (10th Hebrew birthday):</strong> ${formatDateForDisplay(endDate)}</p>
+        <p><strong>Total Days:</strong> ${Math.round((endDate - startDate) / (1000 * 60 * 60 * 24))}</p>
+        <p><strong>Approximate Verses Per Day:</strong> ${Math.ceil(verses.length / chaptersInfo.totalDays)}</p>
+    `;
+
+    return scheduleInfoDiv;
+}
+
+
 
 /**
  * Generate a balanced schedule for children ages 5-10
@@ -1348,112 +1209,43 @@ function generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, 
         unitsPerDay,
         selectedDays: selectedDays.join(',')
     });
-    
+
     const schedule = [];
     let currentDate = new Date(startDate);
     let remainingUnits = [...units];
-    let chaptersInfo = null;
-    
-    // If using units per day mode, calculate how many days we need
-    if (unitsPerDay) {
-        const totalDays = Math.ceil(units.length / unitsPerDay);
-        console.log(`Calculated ${totalDays} total days needed for ${units.length} units at ${unitsPerDay} per day`);
-        let estimatedEndDate = new Date(startDate);
-        let studyDaysFound = 0;
-        
-        // Find the date when we'll have enough study days
-        while (studyDaysFound < totalDays) {
-            if (selectedDays.includes(estimatedEndDate.getDay())) {
-                studyDaysFound++;
-            }
-            if (studyDaysFound < totalDays) {
-                estimatedEndDate.setDate(estimatedEndDate.getDate() + 1);
-            }
-        }
-        
-        // If no end date provided, use the estimated one
-        if (!endDate || startDate.getTime() === endDate.getTime()) {
-            endDate = new Date(estimatedEndDate);
-        }
-        
-        chaptersInfo = {
-            totalChapters: units.length,
-            totalDays: totalDays,
-            chaptersPerDay: unitsPerDay,
-            estimatedEndDate: estimatedEndDate,
-            studyUnitType: typeof studyUnitType === 'string' ? studyUnitType : 'chapters'
-        };
-        console.log('Generated chaptersInfo:', chaptersInfo);
-    } 
-    // If using timeframe mode, calculate units per day
-    else if (endDate) {
-        const totalStudyDays = countStudyDays(startDate, endDate, selectedDays);
-        const avgUnitsPerDay = units.length / totalStudyDays;
-        
-        chaptersInfo = {
-            totalChapters: units.length,
-            totalDays: totalStudyDays,
-            chaptersPerDay: avgUnitsPerDay,
-            studyUnitType: typeof studyUnitType === 'string' ? studyUnitType : 'chapters'
-        };
+    let chaptersInfo = {
+        totalChapters: units.length,
+        totalDays: countStudyDays(startDate, endDate, selectedDays),
+        chaptersPerDay: 0,
+        studyUnitType: typeof studyUnitType === 'string' ? studyUnitType : 'chapters'
+    };
+
+    if (endDate) {
+        chaptersInfo.chaptersPerDay = Math.ceil(units.length / chaptersInfo.totalDays);
+    } else {
+        chaptersInfo.chaptersPerDay = unitsPerDay;
+        endDate = calculateEndDate(startDate, units.length, unitsPerDay, selectedDays);
     }
-    
-    // If no end date is provided, we'll just create a full schedule for all units
-    if (!endDate) {
-        // Calculate how many days we need based on units per day
-        const totalDays = Math.ceil(units.length / (unitsPerDay || 1));
-        console.log(`No end date provided. Calculated ${totalDays} total days needed for ${units.length} units`);
-        
-        let estimatedEndDate = new Date(startDate);
-        let studyDaysFound = 0;
-        
-        // Find the date when we'll have enough study days
-        while (studyDaysFound < totalDays) {
-            if (selectedDays.includes(estimatedEndDate.getDay())) {
-                studyDaysFound++;
-            }
-            if (studyDaysFound < totalDays) {
-                estimatedEndDate.setDate(estimatedEndDate.getDate() + 1);
-            }
-        }
-        
-        // Use the estimated end date
-        endDate = new Date(estimatedEndDate);
-        
-        // Update chaptersInfo
-        if (!chaptersInfo) {
-            chaptersInfo = {
-                totalChapters: units.length,
-                totalDays: totalDays,
-                chaptersPerDay: unitsPerDay || Math.ceil(units.length / totalDays),
-                estimatedEndDate: estimatedEndDate,
-                studyUnitType: typeof studyUnitType === 'string' ? studyUnitType : 'chapters'
-            };
-        }
-    }
-    
+
     // Generate schedule entries
     while (currentDate <= endDate && remainingUnits.length > 0) {
         const dayOfWeek = currentDate.getDay();
-        
-        // Check if this is a selected study day
+
         if (selectedDays.includes(dayOfWeek)) {
             let dailyUnits;
-            
+
             if (unitsPerDay) {
-                // Fixed units per day mode
                 dailyUnits = remainingUnits.slice(0, unitsPerDay);
                 remainingUnits = remainingUnits.slice(unitsPerDay);
             } else {
-                // Timeframe mode: distribute units evenly
                 const daysLeft = countStudyDays(currentDate, endDate, selectedDays);
                 if (daysLeft <= 0) break;
-                
+
                 const unitsPerDayDynamic = Math.ceil(remainingUnits.length / daysLeft);
                 dailyUnits = remainingUnits.slice(0, unitsPerDayDynamic);
                 remainingUnits = remainingUnits.slice(unitsPerDayDynamic);
             }
-            
+
             if (dailyUnits.length > 0) {
                 schedule.push({
                     date: new Date(currentDate),
@@ -1462,13 +1254,26 @@ function generateSchedule(units, startDate, endDate, unitsPerDay, selectedDays, 
                 });
             }
         }
-        
-        // Move to next day
         currentDate.setDate(currentDate.getDate() + 1);
     }
-    
     console.log(`Returning schedule with ${schedule.length} days`);
     return { schedule, chaptersInfo };
+}
+
+function calculateEndDate(startDate, totalUnits, unitsPerDay, selectedDays) {
+    let estimatedEndDate = new Date(startDate);
+    let studyDaysFound = 0;
+    const totalDays = Math.ceil(totalUnits / unitsPerDay);
+
+    while (studyDaysFound < totalDays) {
+        if (selectedDays.includes(estimatedEndDate.getDay())) {
+            studyDaysFound++;
+        }
+        if (studyDaysFound < totalDays) {
+            estimatedEndDate.setDate(estimatedEndDate.getDate() + 1);
+        }
+    }
+    return new Date(estimatedEndDate);
 }
 
 /**
@@ -1590,92 +1395,70 @@ function getHebrewMonthName(data) {
 function displaySchedule(schedule, name, additionalInfo = null) {
     const tableBody = document.getElementById('scheduleTableBody');
     tableBody.innerHTML = '';
-    
-    // Clear ALL existing schedule info divs to prevent duplication
-    const existingScheduleInfos = document.querySelectorAll('.schedule-info');
-    existingScheduleInfos.forEach(div => {
-        if (div && div.parentNode) {
-            div.parentNode.removeChild(div);
-        }
-    });
-    
-    // Add summary information at the top if we have chapters info or additional info
-    if (additionalInfo) {
-        // If additionalInfo is a DOM element, add it directly
-        if (additionalInfo instanceof HTMLElement) {
-            const summaryRow = document.createElement('tr');
-            summaryRow.className = 'table-primary';
-            
-            const summaryCell = document.createElement('td');
-            summaryCell.colSpan = 3;
-            summaryCell.appendChild(additionalInfo);
-            
-            summaryRow.appendChild(summaryCell);
-            tableBody.appendChild(summaryRow);
-        } else if (typeof additionalInfo === 'object') {
-            // Handle traditional chaptersInfo object
-            const summaryRow = document.createElement('tr');
-            summaryRow.className = 'table-primary';
-            
-            const summaryCell = document.createElement('td');
-            summaryCell.colSpan = 3;
-            
-            // Different summary based on whether we have an estimated end date or not
-            if (additionalInfo.estimatedEndDate) {
-                // For units per day mode
-                const unitType = String(additionalInfo.studyUnitType || 'chapters');
-                summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${additionalInfo.totalChapters} ${unitType} over ${additionalInfo.totalDays} study days.<br>
-                                       <strong>${unitType.charAt(0).toUpperCase() + unitType.slice(1)} per day:</strong> ${additionalInfo.chaptersPerDay}.<br>
-                                       <strong>Estimated completion date:</strong> ${formatDateForDisplay(additionalInfo.estimatedEndDate)}.`;
-            } else {
-                // For timeframe mode
-                const unitType = String(additionalInfo.studyUnitType || 'chapters');
-                summaryCell.innerHTML = `<strong>Schedule Summary:</strong> ${additionalInfo.totalChapters} ${unitType} over ${additionalInfo.totalDays} study days.<br>
-                                       <strong>Average per day:</strong> ${additionalInfo.chaptersPerDay.toFixed(2)} ${unitType} on each study day.`;
-            }
-            
-            summaryRow.appendChild(summaryCell);
-            tableBody.appendChild(summaryRow);
-        }
-    }
-    
+
+    const today = new Date();
+    const todayFormatted = today.toLocaleDateString('en-CA');
+
+    let todayReferences = [];
+
+    console.log(`📅 Local Time: ${today.toString()}`);
+    console.log(`📅 Local Formatted Date (YYYY-MM-DD): ${todayFormatted}`);
+
     schedule.forEach(entry => {
         const row = document.createElement('tr');
-        
+
         const dateCell = document.createElement('td');
         dateCell.textContent = formatDateForDisplay(entry.date);
         row.appendChild(dateCell);
-        
+
         const dayCell = document.createElement('td');
         dayCell.textContent = entry.dayOfWeek;
         row.appendChild(dayCell);
-        
+
         const readingCell = document.createElement('td');
         readingCell.textContent = entry.reading.join(', ');
         row.appendChild(readingCell);
-        
+
         tableBody.appendChild(row);
+
+        const entryDateFormatted = new Date(entry.date).toLocaleDateString('en-CA'); 
+
+        if (entryDateFormatted === todayFormatted) {
+            todayReferences = todayReferences.concat(entry.reading);
+        }
     });
-    
-    // Store the schedule and name in window for download functions
-    window.currentSchedule = schedule;
-    window.scheduleName = name;
-    
-    // Show the result section
+
+    console.log(`✅ Today's References (${todayFormatted}):`, todayReferences);
+
     document.getElementById('resultSection').style.display = 'block';
-    
-    // Scroll to results
     document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+
+    if (todayReferences.length > 0) {
+        fetchLearningOfTheDay(todayReferences);
+    } else {
+        console.warn('⚠️ No readings scheduled for today.');
+        document.getElementById('learningContent').innerHTML = '<p>No scheduled readings for today.</p>';
+    }
+
+    setSchedule(schedule, name);
 }
 
 /**
  * Download the schedule as a CSV file
  */
 function downloadScheduleCSV() {
+    console.log("📥 Attempting to download CSV...");
+
+    // Check if window.currentSchedule exists
     if (!window.currentSchedule || window.currentSchedule.length === 0) {
+        console.warn("⚠️ No schedule found! Cannot download.");
+        console.log("🔍 Debug Info - window.currentSchedule:", window.currentSchedule);
         alert('No schedule to download');
         return;
     }
+
+    console.log("✅ Schedule found! Preparing CSV...");
+    console.log("📅 Current Schedule:", window.currentSchedule);
     
     const csvContent = [
         'Date,Day of Week,Reading',
@@ -1683,18 +1466,24 @@ function downloadScheduleCSV() {
             return `${formatDate(entry.date)},${entry.dayOfWeek},"${entry.reading.join(', ')}"`;  
         })
     ].join('\n');
-    
+
+    console.log("📜 Generated CSV Content:\n", csvContent);
+
     downloadFile(csvContent, `${window.scheduleName}_schedule.csv`, 'text/csv');
 }
 
-/**
- * Download the schedule as an ICS file for calendar import
- */
 function downloadScheduleICS() {
+    console.log("📥 Attempting to download ICS...");
+
     if (!window.currentSchedule || window.currentSchedule.length === 0) {
+        console.warn("⚠️ No schedule found! Cannot download.");
+        console.log("🔍 Debug Info - window.currentSchedule:", window.currentSchedule);
         alert('No schedule to download');
         return;
     }
+
+    console.log("✅ Schedule found! Preparing ICS...");
+    console.log("📅 Current Schedule:", window.currentSchedule);
     
     const icsLines = [
         'BEGIN:VCALENDAR',
@@ -1703,13 +1492,13 @@ function downloadScheduleICS() {
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH'
     ];
-    
+
     window.currentSchedule.forEach((entry, index) => {
         const dateStr = formatDate(entry.date).replace(/-/g, '');
         const nextDay = new Date(entry.date);
         nextDay.setDate(nextDay.getDate() + 1);
         const nextDayStr = formatDate(nextDay).replace(/-/g, '');
-        
+
         icsLines.push('BEGIN:VEVENT');
         icsLines.push(`UID:${dateStr}-${index}@torahschedule`);
         icsLines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:.]/g, '').split('T')[0]}T000000Z`);
@@ -1719,9 +1508,11 @@ function downloadScheduleICS() {
         icsLines.push(`DESCRIPTION:${entry.reading.join(', ')}`);
         icsLines.push('END:VEVENT');
     });
-    
+
     icsLines.push('END:VCALENDAR');
-    
+
+    console.log("📜 Generated ICS Content:\n", icsLines.join('\n'));
+
     downloadFile(icsLines.join('\r\n'), `${window.scheduleName}_schedule.ics`, 'text/calendar');
 }
 
@@ -1729,10 +1520,83 @@ function downloadScheduleICS() {
  * Helper function to download a file
  */
 function downloadFile(content, fileName, contentType) {
+    console.log(`⬇️ Initiating file download: ${fileName} (Type: ${contentType})`);
+
     const a = document.createElement('a');
     const file = new Blob([content], { type: contentType });
     a.href = URL.createObjectURL(file);
     a.download = fileName;
     a.click();
     URL.revokeObjectURL(a.href);
+
+    console.log("✅ File download triggered successfully!");
+}
+
+/**
+ * Debugging log to check when the schedule is set
+ */
+/**
+ * Debugging log to check when the schedule is set
+ */
+function setSchedule(schedule, scheduleName) {
+    console.log("✅ Storing schedule globally!");
+    window.currentSchedule = schedule;
+    window.scheduleName = scheduleName;
+    console.log("📅 Set window.currentSchedule:", window.currentSchedule);
+}
+
+// Check if schedule is set on page load
+window.onload = function() {
+    console.log("🔄 Page Loaded! Checking if schedule exists...");
+    console.log("🛠 window.currentSchedule:", window.currentSchedule);
+};
+
+/**
+ * Fetch learning of the day from Sefaria API
+ */
+function fetchLearningOfTheDay(references) {
+    if (!Array.isArray(references) || references.length === 0) {
+        console.warn('⚠️ No references provided for learning of the day.');
+        return;
+    }
+
+    const learningContent = document.getElementById('learningContent');
+    learningContent.innerHTML = '<strong>📖 Learning of the Day:</strong><br><ul style="direction: rtl; text-align: right;"></ul>';
+    const contentList = learningContent.querySelector('ul');
+
+    references.forEach(reference => {
+        const formattedReference = reference.replace(/\s+/g, '_'); // Convert spaces to underscores
+        const url = `https://www.sefaria.org/api/v3/texts/${formattedReference}`;
+        console.log(`🔍 Fetching: ${url}`);
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log(`✅ Response for ${formattedReference}:`, data);
+
+                let hebrewVerses = [];
+                if (data.versions && Array.isArray(data.versions) && data.versions.length > 0) {
+                    const firstVersion = data.versions.find(v => v.language === "he"); // Get first Hebrew version
+                    if (firstVersion) {
+                        const textData = firstVersion.text;
+
+                        if (Array.isArray(textData)) {
+                            // Multiple verses case
+                            hebrewVerses = textData.map((verse, index) => `<strong>${index + 1}:</strong> ${verse}`);
+                        } else if (typeof textData === "string") {
+                            // Single verse case
+                            hebrewVerses = [`<strong>1:</strong> ${textData}`];
+                        }
+                    }
+                }
+
+                // Create list item
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<strong>${reference}:</strong><br>${hebrewVerses.length > 0 ? hebrewVerses.join('<br>') : '<span style="color:red;">Text not available</span>'}`;
+                contentList.appendChild(listItem);
+            })
+            .catch(error => {
+                console.error(`❌ Error fetching learning of the day for ${reference}:`, error);
+            });
+    });
 }

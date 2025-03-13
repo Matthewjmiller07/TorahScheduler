@@ -202,21 +202,21 @@
                     <div class="form-group">
                         <label>Schedule Type:</label>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="scheduleType" id="chaptersPerDay" value="chaptersPerDay" checked>
-                            <label class="form-check-label" for="chaptersPerDay">
+                            <input class="form-check-input" type="checkbox" id="chaptersPerDayCheckbox">
+                            <label class="form-check-label" for="chaptersPerDayCheckbox">
                                 Units per day
                             </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="scheduleType" id="timeframe" value="timeframe">
-                            <label class="form-check-label" for="timeframe">
+                            <input class="form-check-input" type="checkbox" id="timeframeCheckbox">
+                            <label class="form-check-label" for="timeframeCheckbox">
                                 Set timeframe
                             </label>
                         </div>
                     </div>
                     
-                    <div class="form-group" id="chaptersPerDayGroup">
-                        <label for="chaptersPerDay">Study units per day:</label>
+                    <div class="form-group" id="chaptersPerDayInputGroup" style="display: none;">
+                        <label for="chaptersPerDayInput">Study units per day:</label>
                         <div class="mb-2">
                             <select class="form-select" id="studyUnitType">
                                 <option value="chapters" selected>Chapters</option>
@@ -226,10 +226,10 @@
                         <input type="number" class="form-control" id="chaptersPerDayInput" min="1" value="1">
                     </div>
                     
-                    <div class="form-group" id="timeframeGroup" style="display: none;">
+                    <div class="form-group" id="timeframeInputGroup" style="display: none;">
                         <label for="startDate">Start Date:</label>
                         <input type="text" class="form-control" id="startDate">
-                        
+                    
                         <div class="mt-2">
                             <label for="endDate">End Date (optional):</label>
                             <input type="text" class="form-control" id="endDate" placeholder="Leave empty to complete all on start date">
@@ -247,6 +247,16 @@
                             <label><input type="checkbox" value="5" class="weekday" checked> Friday</label>
                             <label><input type="checkbox" value="6" class="weekday" checked> Saturday</label>
                         </div>
+                    </div>
+                    
+                    <div id="learningContent" class="alert alert-info mt-3">
+                        <strong>Learning of the Day:</strong> <ul></ul>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sefariaReference">Enter Sefaria Reference:</label>
+                        <input type="text" class="form-control" id="sefariaReference" placeholder="e.g., Genesis 1 or Berachot 1:1">
+                        <button type="button" class="btn btn-secondary" id="fetchLearningBtn">Fetch Learning</button>
                     </div>
                     
                     <button type="button" class="btn btn-primary" id="generateScheduleBtn">Generate Schedule</button>
